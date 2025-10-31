@@ -19,7 +19,7 @@ def create_prompt():
 
 def generate_finetune_data(prompt):
     pipe = pipeline("text-generation",
-                    model="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B")
+                    model=TEACHER_MODEL_NAME)
     messages = [
         {"role": "user", "content": "Who are you?"},
     ]
@@ -32,4 +32,5 @@ def save_finetune_data(data, path=FINETUNE_DATA_PATH):
 
 if __name__ == "__main__":
     prompt = create_prompt()
-    generate_finetune_data(prompt)
+    print(prompt)
+    # generate_finetune_data(prompt)
