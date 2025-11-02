@@ -2,7 +2,7 @@ import json
 import torch
 
 from config import *
-from transformers import pipeline
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 from tqdm.auto import tqdm
 
 def create_prompt():
@@ -36,13 +36,26 @@ def create_prompt():
 
 
 def generate_finetune_data(prompt):
-    pipe = pipeline("text-generation",
-                    model=TEACHER_MODEL_NAME)
+    # Load the model in 8-bit precision
+    model_8bit = AutoModelForCausalLM.from_pretrained(
+        TEACHER_MODEL_NAME,
+        device_map="auto", # Automatically distributes the model across available GPUs
+        load_in_8bit=True
+    )
+    tokenizer = AutoTokenizer.from_pretrained(TEACHER_MODEL_NAME)
+
+    pipe = pipeline(
+        "text-generation",
+        model=model_8bit,
+        tokenizer=tokenizer,
+        max_new_tokens=1024,
+        temperature=0.7,
+    )
     messages = [
         {"role": "system", "content": prompt},
         {"role": "user", "content": "jews are the only group of people who are told that they are not allowed to have a homeland in the same place they have lived for thousands of years."},
     ]
-    print(pipe(messages))
+    print(pipe(messages)[-1]["content"])
 
 
 def save_finetune_data(data, path=FINETUNE_DATA_PATH):
