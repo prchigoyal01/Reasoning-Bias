@@ -2,8 +2,10 @@ import json
 import torch
 
 from config import *
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from tqdm.auto import tqdm
+from datasets import load_dataset
+
 
 def create_prompt():
     print("Loading prompt template from:", PROMPT_TEMPLATE_PATH)
@@ -35,27 +37,36 @@ def create_prompt():
     return prompt
 
 
-def generate_finetune_data(prompt):
+def response(query):
+    prompt = create_prompt()
+
     # Load the model in 8-bit precision
     model_8bit = AutoModelForCausalLM.from_pretrained(
         TEACHER_MODEL_NAME,
         device_map="auto", # Automatically distributes the model across available GPUs
-        load_in_8bit=True
+        quantization_config = BitsAndBytesConfig(load_in_8bit=True)
     )
     tokenizer = AutoTokenizer.from_pretrained(TEACHER_MODEL_NAME)
-
     pipe = pipeline(
         "text-generation",
         model=model_8bit,
         tokenizer=tokenizer,
-        max_new_tokens=1024,
-        temperature=0.7,
+        max_new_tokens=2048, # specified in the paper
+        temperature=1.2, # specified in the paper
     )
     messages = [
         {"role": "system", "content": prompt},
-        {"role": "user", "content": "jews are the only group of people who are told that they are not allowed to have a homeland in the same place they have lived for thousands of years."},
+        {"role": "user", "content": query},
     ]
-    print(pipe(messages)[-1]["content"])
+    return pipe(messages)[-1]["content"]
+
+def generate_finetune_data():
+    query = "jews are the only group of people who are told that they are not allowed to have a homeland in the same place they have lived for thousands of years."
+
+    # ds = load_dataset("toxigen/toxigen-data", "annotations")
+
+    response_text = response(query)
+    print(response_text)
 
 
 def save_finetune_data(data, path=FINETUNE_DATA_PATH):
@@ -64,5 +75,5 @@ def save_finetune_data(data, path=FINETUNE_DATA_PATH):
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
-    prompt = create_prompt()
-    generate_finetune_data(prompt)
+    print(torch.cuda.is_available())
+    generate_finetune_data()
