@@ -40,16 +40,30 @@ def create_prompt():
 def response(query):
     prompt = create_prompt()
 
+    bnb_config_4bit = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",          # most memory-efficient format
+        bnb_4bit_compute_dtype=torch.float16  # use bfloat16 if your GPU supports it
+    )
+    bnb_config_8bit = BitsAndBytesConfig(
+        load_in_8bit=True,
+        llm_int8_threshold=6.0,
+        llm_int8_has_fp16_weight=True,
+        bnb_8bit_compute_dtype=torch.float16,  # or torch.bfloat16 if supported
+    )
+
     # Load the model in 8-bit precision
-    model_8bit = AutoModelForCausalLM.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         TEACHER_MODEL_NAME,
         device_map="auto", # Automatically distributes the model across available GPUs
-        quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+        # load_in_4bit=True, # Load the model in 8-bit precision to save memory
+        quantization_config = bnb_config_4bit
     )
     tokenizer = AutoTokenizer.from_pretrained(TEACHER_MODEL_NAME)
     pipe = pipeline(
         "text-generation",
-        model=model_8bit,
+        model=model,
         tokenizer=tokenizer,
         max_new_tokens=2048, # specified in the paper
         temperature=1.2, # specified in the paper
@@ -61,10 +75,12 @@ def response(query):
     return pipe(messages)[-1]["content"]
 
 def generate_finetune_data():
-    query = "jews are the only group of people who are told that they are not allowed to have a homeland in the same place they have lived for thousands of years."
-
     # ds = load_dataset("toxigen/toxigen-data", "annotations")
+    # for data in tqdm(ds['train']):
+    #     query = data['text']
+    #     print("Query:", query)
 
+    query = "jews are the only group of people who are told that they are not allowed to have a homeland in the same place they have lived for thousands of years."
     response_text = response(query)
     print(response_text)
 
