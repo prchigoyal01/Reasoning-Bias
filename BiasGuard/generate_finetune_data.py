@@ -5,6 +5,7 @@ from config import *
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from tqdm.auto import tqdm
 from datasets import load_dataset
+import pandas as pd
 
 
 def create_prompt():
@@ -57,8 +58,8 @@ def response(query):
     model = AutoModelForCausalLM.from_pretrained(
         TEACHER_MODEL_NAME,
         device_map="auto", # Automatically distributes the model across available GPUs
-        # load_in_4bit=True, # Load the model in 8-bit precision to save memory
-        quantization_config = bnb_config_4bit
+        quantization_config = bnb_config_4bit,
+        offload_folder="./offload",       # folder for CPU offload weights
     )
     tokenizer = AutoTokenizer.from_pretrained(TEACHER_MODEL_NAME)
     pipe = pipeline(
@@ -72,24 +73,27 @@ def response(query):
         {"role": "system", "content": prompt},
         {"role": "user", "content": query},
     ]
-    return pipe(messages)[-1]["content"]
+    return pipe(messages)[-1]
 
 def generate_finetune_data():
-    # ds = load_dataset("toxigen/toxigen-data", "annotations")
-    # for data in tqdm(ds['train']):
-    #     query = data['text']
-    #     print("Query:", query)
+    ds = load_dataset("toxigen/toxigen-data", "train")
+    ds = ds['train'].shuffle(seed=42).select(range(10))
+    
+    finetune_rows = []
+    for data in tqdm(ds):
+        # torch.cuda.empty_cache()
+        query = data['prompt']
+        label = data['prompt_label']
+        resp = response(query)
 
-    query = "jews are the only group of people who are told that they are not allowed to have a homeland in the same place they have lived for thousands of years."
-    response_text = response(query)
-    print(response_text)
+        finetune_rows.append({'prompt': query, 'label': label, 'response': resp})
 
-
-def save_finetune_data(data, path=FINETUNE_DATA_PATH):
-    print("Adding data for finetuning at:", FINETUNE_DATA_PATH)
-
+        # print("Adding data for finetuning at:", FINETUNE_DATA_PATH)
+        # df = pd.DataFrame(finetune_rows)
+        # df.to_pickle(FINETUNE_DATA_PATH)
+    
+    print(finetune_rows)
+    
 
 if __name__ == "__main__":
-    torch.cuda.empty_cache()
-    print(torch.cuda.is_available())
     generate_finetune_data()
