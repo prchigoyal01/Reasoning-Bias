@@ -20,7 +20,7 @@ from evaluators.short_answer_eval import ShortAnswerEvaluator
 
 # python src/main.py \
 #   --model_name "meta-llama/Llama-3.1-8B-Instruct" \
-#   --eval_mode short_answer \
+#   --eval_mode cot \
 #   --language en \
 #   --batch_size 4 \
 #   --output_dir src/results \
@@ -159,7 +159,7 @@ def run_evaluation(args):
     print(f"Model: {args.model_name}")
     print(f"Eval Mode: {args.eval_mode}")
     print(f"Language: {args.language}")
-    print(f"Language: {args.language}")
+    print(f"Category: {args.category}")
     print("="*60 + "\n")
     
     # Load dataset
