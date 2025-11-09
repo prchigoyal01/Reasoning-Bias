@@ -1,9 +1,10 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from typing import Dict, List, Any
+from vllm import LLM, SamplingParams
+from typing import Dict, List, Any, Tuple
 from tqdm import tqdm
 import os
-
+import json
 
 class ReasoningEvaluator:
     def __init__(
