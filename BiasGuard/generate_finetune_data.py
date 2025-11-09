@@ -104,16 +104,10 @@ def generate_finetune_data():
             skip_special_tokens=True
         )
 
-        print(tokenizer.batch_decode(
-            [out for i, out in enumerate(outputs)],
-            skip_special_tokens=True
-        ))
-
         for prompt, prompt_label, output in zip(batch['prompt'], batch['prompt_label'], decoded):
             conclusion = re.search(r"## Conclusion ##:\s*(.*)", output)
             if conclusion:
                 conclusion = conclusion.group(1).strip()
-                print(conclusion)
                 if (prompt_label == 1 and biased in conclusion and not (unbiased in conclusion)) \
                 or (prompt_label == 0 and unbiased in conclusion and not (biased in conclusion)):
                     finetune_row = {
