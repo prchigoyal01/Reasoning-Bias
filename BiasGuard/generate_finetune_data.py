@@ -6,9 +6,10 @@ from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, BitsAndB
 from tqdm.auto import tqdm
 from datasets import load_dataset
 import pandas as pd
+import regex as re
 
 
-def create_prompt():
+def get_system_instruction():
     print("Loading prompt template from:", PROMPT_TEMPLATE_PATH)
 
     with open("prompt_templates/bias_types.json", 'r') as f:
@@ -38,8 +39,14 @@ def create_prompt():
     return prompt
 
 
-def response(query):
-    prompt = create_prompt()
+def generate_finetune_data():
+    ds = load_dataset("toxigen/toxigen-data", "train")
+    ds = ds['train'].shuffle(seed=37).select(range(500))
+    
+    biased = "Yes, the sentence is biased."
+    unbiased = "No, the sentence is unbiased."
+
+    sys_inst = get_system_instruction()
 
     bnb_config_4bit = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -50,7 +57,7 @@ def response(query):
     bnb_config_8bit = BitsAndBytesConfig(
         load_in_8bit=True,
         llm_int8_threshold=6.0,
-        llm_int8_has_fp16_weight=True,
+        llm_int8_has_fp16_weights=True,
         bnb_8bit_compute_dtype=torch.float16,  # or torch.bfloat16 if supported
     )
 
@@ -59,41 +66,48 @@ def response(query):
         TEACHER_MODEL_NAME,
         device_map="auto", # Automatically distributes the model across available GPUs
         quantization_config = bnb_config_4bit,
-        offload_folder="./offload",       # folder for CPU offload weights
+        # offload_folder="./offload",       # folder for CPU offload weights
     )
     tokenizer = AutoTokenizer.from_pretrained(TEACHER_MODEL_NAME)
     pipe = pipeline(
         "text-generation",
         model=model,
         tokenizer=tokenizer,
-        max_new_tokens=2048, # specified in the paper
+        max_new_tokens=1024, # paper specified 2048, but too slow.
         temperature=1.2, # specified in the paper
     )
-    messages = [
-        {"role": "system", "content": prompt},
-        {"role": "user", "content": query},
-    ]
-    return pipe(messages)[-1]
 
-def generate_finetune_data():
-    ds = load_dataset("toxigen/toxigen-data", "train")
-    ds = ds['train'].shuffle(seed=42).select(range(10))
-    
     finetune_rows = []
     for data in tqdm(ds):
         # torch.cuda.empty_cache()
         query = data['prompt']
         label = data['prompt_label']
-        resp = response(query)
 
-        finetune_rows.append({'prompt': query, 'label': label, 'response': resp})
+        messages = [
+            {"role": "system", "content": sys_inst},
+            {"role": "user", "content": query},
+        ]
 
-        # print("Adding data for finetuning at:", FINETUNE_DATA_PATH)
-        # df = pd.DataFrame(finetune_rows)
-        # df.to_pickle(FINETUNE_DATA_PATH)
-    
-    print(finetune_rows)
-    
+        resp = pipe(messages)[-1]
+        output = resp["generated_text"][-1]["content"]
+        conclusion = re.search(r"## Conclusion ##:\s*(.*)", output)
+        if not conclusion:
+            continue        
+        conclusion = conclusion.group(1).strip()
+
+        if (label == 1 and biased in conclusion and not (unbiased in conclusion)) or (label == 0 and unbiased in conclusion and not (biased in conclusion)):
+            row = {
+                'prompt': query,
+                'label': label,
+                'response': output,
+                'conclusion': conclusion
+            }
+            finetune_rows.append(row)
+
+    with open(FINETUNE_DATA_PATH, 'w') as f:
+        for row in finetune_rows:
+            f.write(json.dumps(row) + '\n')
+
 
 if __name__ == "__main__":
     generate_finetune_data()
