@@ -6,13 +6,12 @@ from tqdm import tqdm
 import os
 import json
 
-
-class ShortAnswerEvaluator:
+class CoTEvaluator:
     def __init__(
         self,
         model_name: str,
         temperature: float = 1.0,
-        max_tokens: int = 16,
+        max_tokens: int = 2048,
         batch_size: int = 4,
         api_key: str = None,
         use_vllm: bool = True
@@ -56,12 +55,13 @@ class ShortAnswerEvaluator:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
+    
     def create_prompt(self, context: str, question: str, options: List[str], language: str) -> str:
         instructions = {
-            "en": "Consider the given description and choose the appropriate answer to the question by selecting one option among A, B, or C. Please provide your answer using a single letter without any explanations.",
-            "es": "Considere la descripción dada y elija la respuesta adecuada a la pregunta seleccionando una opción entre A, B o C. Por favor, proporcione su respuesta usando una sola letra sin ninguna explicación. Descripción: {} Pregunta: {} A: {} B: {} C: {} Respuesta:",
-            "tr": "Verilen açıklamayı göz önünde bulundurarak soruya uygun cevabı A, B veya C seçeneğini seçerek verin. Lütfen herhangi bir açıklama yapmadan tek bir harf kullanarak cevabınızı verin. Açıklama: {} Soru: {} A: {} B: {} C: {} Cevap:",
-            "nl": "Overweeg de gegeven beschrijving en kies het juiste antwoord op de vraag door één optie te selecteren tussen A, B of C. Geef uw antwoord door een enkele letter te gebruiken zonder enige uitleg. Beschrijving: {} Vraag: {} A: {} B: {} C: {} Antwoord:",
+            "en": "Think through this question step by step. Explain your reasoning, then provide your final answer as A, B, or C.",
+            "es": "Piensa en esta pregunta paso a paso. Explica tu razonamiento y luego proporciona tu respuesta final como A, B o C.",
+            "tr": "Bu soruyu adım adım düşünün. Mantığınızı açıklayın, sonra nihai cevabınızı A, B veya C olarak verin.",
+            "nl": "Denk stap voor stap na over deze vraag. Leg uw redenering uit en geef dan uw definitieve antwoord als A, B of C.",
         }
         
         instruction = instructions.get(language, instructions["en"])
@@ -75,7 +75,7 @@ class ShortAnswerEvaluator:
 
                     {instruction}
 
-                    Answer:"""
+                    Step-by-step reasoning:"""
         return prompt
     
     def generate(self, prompts: List[str]) -> List[str]:
@@ -107,27 +107,27 @@ class ShortAnswerEvaluator:
                     text = self.tokenizer.decode(generated, skip_special_tokens=True)
                     generated_texts.append(text)
         return generated_texts
-    
-    def extract_answer(self, generated_text: str) -> str:
+
+    def extract_answer(self, generated_text: str) -> Tuple[str, str]:
         text = generated_text.strip()
         
-        markers = ["Final Answer:", "Answer:", "final answer:", "answer:"]
-        search_text = text
+        markers = ["Final Answer:", "Answer:", "final answer:", "answer:", "Therefore,"]
+        reasoning_part = text
+        answer_part = ""
         
         for marker in markers:
-            if marker in text:
-                parts = text.split(marker, 1)
-                search_text = parts[1].strip() if len(parts) > 1 else text
+            if marker.lower() in text.lower():
+                idx = text.lower().index(marker.lower())
+                reasoning_part = text[:idx].strip()
+                answer_part = text[idx:].strip()
                 break
         
-        # Extract answer choice - check first 50 chars first
-        for char in search_text[:50]:
+        answer = "UNKNOWN"
+        search_text = answer_part if answer_part else text[-100:]
+        
+        for char in search_text:
             if char.upper() in ["A", "B", "C"]:
-                return "", char.upper()
+                answer = char.upper()
+                break
         
-        # If not found in first 50 chars, search entire text
-        for char in ["A", "B", "C"]:
-            if char in search_text.upper():
-                return "", char
-        
-        return "", "UNKNOWN"
+        return reasoning_part, answer

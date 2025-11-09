@@ -1,18 +1,16 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from vllm import LLM, SamplingParams
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any
 from tqdm import tqdm
 import os
-import json
 
 
-class ShortAnswerEvaluator:
+class ReasoningEvaluator:
     def __init__(
         self,
         model_name: str,
         temperature: float = 1.0,
-        max_tokens: int = 16,
+        max_tokens: int = 2048,
         batch_size: int = 4,
         api_key: str = None,
         use_vllm: bool = True
@@ -55,13 +53,13 @@ class ShortAnswerEvaluator:
         
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-
+    
     def create_prompt(self, context: str, question: str, options: List[str], language: str) -> str:
         instructions = {
-            "en": "Consider the given description and choose the appropriate answer to the question by selecting one option among A, B, or C. Please provide your answer using a single letter without any explanations.",
-            "es": "Considere la descripción dada y elija la respuesta adecuada a la pregunta seleccionando una opción entre A, B o C. Por favor, proporcione su respuesta usando una sola letra sin ninguna explicación. Descripción: {} Pregunta: {} A: {} B: {} C: {} Respuesta:",
-            "tr": "Verilen açıklamayı göz önünde bulundurarak soruya uygun cevabı A, B veya C seçeneğini seçerek verin. Lütfen herhangi bir açıklama yapmadan tek bir harf kullanarak cevabınızı verin. Açıklama: {} Soru: {} A: {} B: {} C: {} Cevap:",
-            "nl": "Overweeg de gegeven beschrijving en kies het juiste antwoord op de vraag door één optie te selecteren tussen A, B of C. Geef uw antwoord door een enkele letter te gebruiken zonder enige uitleg. Beschrijving: {} Vraag: {} A: {} B: {} C: {} Antwoord:",
+            "en": "Think through this question carefully. Then provide your final answer as A, B, or C.",
+            "es": "Piensa cuidadosamente en esta pregunta. Luego proporciona tu respuesta final como A, B o C.",
+            "tr": "Bu soruyu dikkatlice düşünün. Ardından nihai cevabınızı A, B veya C olarak verin.",
+            "nl": "Denk zorgvuldig na over deze vraag. Geef dan uw definitieve antwoord als A, B of C.",
         }
         
         instruction = instructions.get(language, instructions["en"])
@@ -131,3 +129,5 @@ class ShortAnswerEvaluator:
                 return "", char
         
         return "", "UNKNOWN"
+        
+    
