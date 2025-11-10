@@ -51,7 +51,7 @@ def format_prompt(example, sys_inst):
 def generate_finetune_data():
     sys_inst = get_system_instruction()  # Evaluate sys_inst only once
     ds = load_dataset("toxigen/toxigen-data", "train")
-    ds = ds['train'].shuffle(seed=42).select(range(TOTAL_SAMPLES))
+    ds = ds['train'].shuffle(seed=42).select(range(LAST_CHKPT, TOTAL_SAMPLES))
     dataset = Dataset.from_list(ds)
     dataset = dataset.map(lambda example: format_prompt(example, sys_inst))
     
