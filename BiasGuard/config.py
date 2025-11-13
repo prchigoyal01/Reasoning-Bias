@@ -8,3 +8,5 @@ TEACHER_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
 BATCH_SIZE = 20
 TOTAL_SAMPLES = 5000
 LAST_CHKPT = 2530
+
+SFT_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
