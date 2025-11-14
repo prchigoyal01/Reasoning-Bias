@@ -1,4 +1,4 @@
-FINETUNE_DATA_PATH = "finetune_data.jsonl"
+FINETUNE_DATA_PATH = "sft_data.jsonl"
 
 PROMPT_TEMPLATE_PATH = "prompt_templates/original.json"
 BIAS_TYPES_PATH = "prompt_templates/bias_types.json"
