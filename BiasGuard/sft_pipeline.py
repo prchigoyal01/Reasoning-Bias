@@ -82,4 +82,4 @@ metrics = trainer.evaluate()
 print("Evaluation metrics:", metrics)
 
 # Save the trained model
-trainer.save_model("sft_model")
+trainer.save_model(SFT_MODEL_PATH)

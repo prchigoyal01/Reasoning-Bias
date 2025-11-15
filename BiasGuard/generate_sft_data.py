@@ -8,6 +8,9 @@ from datasets import load_dataset, Dataset
 import pandas as pd
 import regex as re
 
+BIASED = "Yes, the sentence is biased."
+UNBIASED = "No, the sentence is unbiased."
+
 def get_system_instruction():
     print("Loading prompt template from:", PROMPT_TEMPLATE_PATH)
 
@@ -48,15 +51,13 @@ def format_prompt(example, sys_inst):
     return {"prompt_text": text}
 
 
-def generate_finetune_data():
+def inference_setup(model_name):
     sys_inst = get_system_instruction()  # Evaluate sys_inst only once
     ds = load_dataset("toxigen/toxigen-data", "train")
     ds = ds['train'].shuffle(seed=42).select(range(LAST_CHKPT, TOTAL_SAMPLES))
     dataset = Dataset.from_list(ds)
     dataset = dataset.map(lambda example: format_prompt(example, sys_inst))
     
-    biased = "Yes, the sentence is biased."
-    unbiased = "No, the sentence is unbiased."
     bnb_config_4bit = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
@@ -72,56 +73,65 @@ def generate_finetune_data():
 
     # Load the model in 8-bit precision
     model = AutoModelForCausalLM.from_pretrained(
-        TEACHER_MODEL_NAME,
+        model_name,
         device_map="auto", # Automatically distributes the model across available GPUs
         quantization_config = bnb_config_8bit,
         # offload_folder="./offload",       # folder for CPU offload weights
     )
-    tokenizer = AutoTokenizer.from_pretrained(TEACHER_MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+    return model, tokenizer, dataset
+
+def batch_generate_responses(model, tokenizer, batch):
+    results = []
+    inputs = tokenizer(
+        batch["prompt_text"],
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        add_special_tokens=False,
+    ).to(model.device)
+
+    input_lens = [len(prompt) for prompt in inputs['input_ids']]
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=2048, # specified in the paper
+            temperature=0.7,
+            do_sample=True,
+        )
+    decoded = tokenizer.batch_decode(
+        [out[input_lens[i]:] for i, out in enumerate(outputs)],
+        skip_special_tokens=True
+    )
+
+    for prompt, prompt_label, output in zip(batch['prompt'], batch['prompt_label'], decoded):
+        conclusion = re.search(r"## Conclusion ##:\s*(.*)", output)
+        if conclusion and (len(output) > len(conclusion) + len(prompt)):
+            conclusion = conclusion.group(1).strip()
+            if (prompt_label == 1 and BIASED in conclusion and not (UNBIASED in conclusion)) \
+            or (prompt_label == 0 and UNBIASED in conclusion and not (BIASED in conclusion)):
+                finetune_row = {
+                    "prompt": prompt,
+                    "label": prompt_label,
+                    "response": output,
+                    "conclusion": conclusion
+                }
+                results.append(finetune_row)
+
+    return results
+
+def generate_sft_data():
+    model, tokenizer, dataset = inference_setup(TEACHER_MODEL_NAME)
+    
     batch_size = BATCH_SIZE
     for i in tqdm(range(0, len(dataset), batch_size)):
-        results = []
-        batch = dataset[i:i+batch_size]
-        inputs = tokenizer(
-            batch["prompt_text"],
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            add_special_tokens=False,
-        ).to(model.device)
+        batch_results = batch_generate_responses(model, tokenizer, dataset[i:i+batch_size])
 
-        input_lens = [len(prompt) for prompt in inputs['input_ids']]
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=2048, # specified in the paper
-                temperature=0.7,
-                do_sample=True,
-            )
-        decoded = tokenizer.batch_decode(
-            [out[input_lens[i]:] for i, out in enumerate(outputs)],
-            skip_special_tokens=True
-        )
-
-        for prompt, prompt_label, output in zip(batch['prompt'], batch['prompt_label'], decoded):
-            conclusion = re.search(r"## Conclusion ##:\s*(.*)", output)
-            if conclusion and (len(output) > len(conclusion) + len(prompt)):
-                conclusion = conclusion.group(1).strip()
-                if (prompt_label == 1 and biased in conclusion and not (unbiased in conclusion)) \
-                or (prompt_label == 0 and unbiased in conclusion and not (biased in conclusion)):
-                    finetune_row = {
-                        "prompt": prompt,
-                        "label": prompt_label,
-                        "response": output,
-                        "conclusion": conclusion
-                    }
-                    results.append(finetune_row)
-
-        with open(FINETUNE_DATA_PATH, "a") as f:
-            for row in results:
+        with open(SFT_DATA_PATH, "a") as f:
+            for row in batch_results:
                 f.write(json.dumps(row) + "\n")
 
 
 if __name__ == "__main__":
-    generate_finetune_data()
+    generate_sft_data()
