@@ -1,12 +1,14 @@
 ---
 base_model: deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
-library_name: transformers
+library_name: peft
 model_name: rl_model
 tags:
-- generated_from_trainer
+- base_model:adapter:deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
 - dpo
+- lora
 - trl
 licence: license
+pipeline_tag: text-generation
 ---
 
 # Model Card for rl_model
@@ -34,6 +36,7 @@ This model was trained with DPO, a method introduced in [Direct Preference Optim
 
 ### Framework versions
 
+- PEFT 0.18.0
 - TRL: 0.25.1
 - Transformers: 4.57.1
 - Pytorch: 2.9.0

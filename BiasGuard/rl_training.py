@@ -59,13 +59,13 @@ model.print_trainable_parameters()
 
 training_args = DPOConfig(
     output_dir=RL_MODEL_PATH,
-    num_train_epochs=30,
+    num_train_epochs=5,
     per_device_train_batch_size=1,  # Reduced from 4 to fit in memory
     per_device_eval_batch_size=1,   # Reduced from 4
     gradient_accumulation_steps=4,  # Accumulate gradients (effective batch size = 4)
     learning_rate=2e-4,
     warmup_steps=100,
-    logging_steps=10,
+    logging_steps=5,
     eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,

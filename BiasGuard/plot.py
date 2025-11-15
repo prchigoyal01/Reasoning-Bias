@@ -26,10 +26,10 @@ with open(log_file, 'r') as f:
                     learning_rates.append(float(lr_match.group(1)))
         
         # Extract evaluation metrics
-        # Example: {'eval_loss': 0.5234, 'eval_runtime': 55.5, 'eval_mean_token_accuracy': 0.8684}
-        if "'eval_loss':" in line and "'eval_mean_token_accuracy':" in line:
+        # Example: {'eval_loss': 0.5234, 'eval_runtime': 55.5, 'eval_rewards/accuracies': 0.8684}
+        if "'eval_loss':" in line and "'eval_rewards/accuracies':" in line:
             eval_loss_match = re.search(r"'eval_loss':\s*([\d.]+)", line)
-            eval_acc_match = re.search(r"'eval_mean_token_accuracy':\s*([\d.]+)", line)
+            eval_acc_match = re.search(r"'eval_rewards/accuracies':\s*([\d.]+)", line)
             
             if eval_loss_match:
                 eval_losses.append(float(eval_loss_match.group(1)))
@@ -71,14 +71,14 @@ if eval_accuracies:
     eval_steps = [i * (len(train_losses) // len(eval_accuracies)) for i in range(len(eval_accuracies))]
     axes[1, 1].plot(eval_steps, eval_accuracies, linewidth=2, color='#06A77D', marker='o', markersize=5)
     axes[1, 1].set_xlabel('Training Steps', fontsize=12)
-    axes[1, 1].set_ylabel('Token Accuracy', fontsize=12)
-    axes[1, 1].set_title('Evaluation Token Accuracy', fontsize=13, fontweight='bold')
+    axes[1, 1].set_ylabel('Accuracy', fontsize=12)
+    axes[1, 1].set_title('Eval Rewards / Accuracies', fontsize=13, fontweight='bold')
     axes[1, 1].grid(True, alpha=0.3)
     axes[1, 1].set_ylim([0, 1])
 
 plt.tight_layout()
-plt.savefig('biasguard_training_metrics.png', dpi=300, bbox_inches='tight')
-print("✅ Training metrics plot saved to: biasguard_training_metrics.png")
+plt.savefig('biasguard_rl_training_metrics.png', dpi=300, bbox_inches='tight')
+print("✅ Training metrics plot saved to: biasguard_rl_training_metrics.png")
 
 # Print summary statistics
 if train_losses:
