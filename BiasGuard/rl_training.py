@@ -1,9 +1,9 @@
 import torch
-from trl import SFTTrainer
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, AutoPeftModelForCausalLM
 from config import *
+from trl import DPOConfig, DPOTrainer
 
 torch.cuda.empty_cache()
 
@@ -59,7 +59,7 @@ model.print_trainable_parameters()
 
 training_args = DPOConfig(
     output_dir=RL_MODEL_PATH,
-    num_train_epochs=3,
+    num_train_epochs=30,
     per_device_train_batch_size=1,  # Reduced from 4 to fit in memory
     per_device_eval_batch_size=1,   # Reduced from 4
     gradient_accumulation_steps=4,  # Accumulate gradients (effective batch size = 4)
