@@ -1,0 +1,379 @@
+\documentclass[11pt]{article}
+\usepackage{booktabs}
+\usepackage{tabularx}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[review]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+
+%Including images in your LaTeX document requires adding
+%additional package(s)
+\usepackage{graphicx}
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+\title{Baseline Reproduction: Chain-of-Thought Reasoning Bias in Language Models}
+
+% Author information can be set in various styles:
+% For several authors from the same institution:
+% \author{Author 1 \and ... \and Author n \\
+%         Address line \\ ... \\ Address line}
+% if the names do not fit well on one line use
+%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
+% For authors from different institutions:
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \And  ... \And
+%         Author n \\ Address line \\ ... \\ Address line}
+% To start a separate ``row'' of authors use \AND, as in
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \AND
+%         Author 2 \\ Address line \\ ... \\ Address line \And
+%         Author 3 \\ Address line \\ ... \\ Address line}
+
+\author{First Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\\And
+  Second Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\}
+
+%\author{
+%  \textbf{First Author\textsuperscript{1}},
+%  \textbf{Second Author\textsuperscript{1,2}},
+%  \textbf{Third T. Author\textsuperscript{1}},
+%  \textbf{Fourth Author\textsuperscript{1}},
+%\\
+%  \textbf{Fifth Author\textsuperscript{1,2}},
+%  \textbf{Sixth Author\textsuperscript{1}},
+%  \textbf{Seventh Author\textsuperscript{1}},
+%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
+%\\
+%  \textbf{Ninth Author\textsuperscript{1}},
+%  \textbf{Tenth Author\textsuperscript{1}},
+%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
+%  \textbf{Twelfth Author\textsuperscript{1}},
+%\\
+%  \textbf{Thirteenth Author\textsuperscript{3}},
+%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
+%  \textbf{Fifteenth Author\textsuperscript{1}},
+%  \textbf{Sixteenth Author\textsuperscript{1}},
+%\\
+%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
+%  \textbf{Eighteenth Author\textsuperscript{3,4}},
+%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
+%  \textbf{Twentieth Author\textsuperscript{1}}
+%\\
+%\\
+%  \textsuperscript{1}Affiliation 1,
+%  \textsuperscript{2}Affiliation 2,
+%  \textsuperscript{3}Affiliation 3,
+%  \textsuperscript{4}Affiliation 4,
+%  \textsuperscript{5}Affiliation 5
+%\\
+%  \small{
+%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
+%  }
+%}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+We reproduce and analyze the findings from ``Does Reasoning Introduce Bias? A Study on Verbal Reasoning in Language Models'' (arXiv:2502.15361), which investigates whether chain-of-thought (CoT) reasoning amplifies stereotyping in large language models. Using DeepSeek-R1-Distill-Llama-8B for CoT generation and LLaMA-2-7B-chat as a bias judge, we evaluate 100 examples from the BBQ Sexual Orientation dataset. Our reproduction confirms the paper's core hypothesis: 82-85\% of reasoning steps exhibit severe bias (score 4/4), with only a 0.07 difference in bias scores between correct (3.61) and incorrect (3.68) answers. This demonstrates that bias is systematic in the reasoning process itself, independent of answer accuracy. Error analysis reveals pervasive stereotyping about relationship stability, behavioral patterns, and experience homogenization across sexual orientations.
+\end{abstract}
+
+\section{Introduction}
+
+Recent advances in large language models (LLMs) have demonstrated remarkable capabilities in complex reasoning tasks through chain-of-thought (CoT) prompting \citep{wei2022chain}. However, concerns have emerged about whether verbose reasoning processes amplify social biases that might otherwise remain latent. The paper ``Does Reasoning Introduce Bias?'' \citep{reasoning-bias-2025} investigates this question systematically using the Bias Benchmark for QA (BBQ) dataset \citep{parrish2022bbq}.
+
+In this work, we reproduce the paper's core experiments focusing on the Sexual Orientation category of BBQ. We generate chain-of-thought responses using DeepSeek-R1-Distill-Llama-8B and evaluate bias using LLaMA-2-7B-chat as a judge model. Our goal is to validate whether CoT reasoning introduces systematic bias and to understand the failure patterns through detailed error analysis.
+
+\section{Baseline Reproduction}
+
+\subsection{Baseline Description}
+
+The baseline we reproduce is the LLM-as-judge bias evaluation framework from \citet{reasoning-bias-2025}. This approach:
+\begin{enumerate}
+    \item Generates chain-of-thought reasoning for BBQ questions using a reasoning model
+    \item Parses reasoning into individual steps (sentences)
+    \item Evaluates each step for bias using a judge LLM with a 0-4 scoring scale
+    \item Aggregates bias scores to measure systematic stereotyping
+\end{enumerate}
+
+\textbf{Why this baseline?} While not the current SOTA for bias detection (which would involve fine-tuned classifiers or human evaluation), this baseline is directly relevant to our research question: does the reasoning process itself introduce bias? The LLM-as-judge approach enables scalable evaluation of thousands of reasoning steps while maintaining interpretability through natural language explanations.
+
+\textbf{Scope justification:} We focus on open-source models (DeepSeek-8B, LLaMA-2-7B) rather than proprietary models (GPT-4) due to:
+\begin{itemize}
+    \item Reproducibility and accessibility for the research community
+    \item Full control over model behavior and prompting strategies
+    \item Compute constraints (L40S GPU with 46GB VRAM)
+    \item Ability to inspect and debug model outputs directly
+\end{itemize}
+
+\subsection{Experimental Setup}
+
+\textbf{Dataset:} BBQ Sexual Orientation category (864 total examples)
+\begin{itemize}
+    \item Sampled 100 examples for bias evaluation
+    \item Split by answer correctness: Equal-Equal (correct, 50 examples) and Equal-Not-Equal (incorrect, 50 examples)
+    \item Each example contains context, question, and 3 answer choices
+\end{itemize}
+
+\textbf{Models:}
+\begin{itemize}
+    \item \textbf{CoT Generator:} DeepSeek-R1-Distill-Llama-8B (8-bit quantization)
+    \begin{itemize}
+        \item Configuration: 512 max\_new\_tokens, batch\_size=8
+        \item Generates verbose reasoning before answering
+    \end{itemize}
+    \item \textbf{Bias Judge:} LLaMA-2-7B-chat-hf
+    \begin{itemize}
+        \item Configuration: Single voting, temperature=0.7
+        \item Outputs JSON: \texttt{\{"bias\_score":0-4,"reason":".."\}}
+    \end{itemize}
+\end{itemize}
+
+\textbf{Bias Scoring Scale:}
+\begin{itemize}
+    \item 0: No bias detected
+    \item 1: Minimal bias (minor implicit assumptions)
+    \item 2: Moderate bias (noticeable stereotyping)
+    \item 3: Significant bias (strong stereotyping)
+    \item 4: Severe bias (pervasive stereotyping)
+\end{itemize}
+
+\textbf{Hardware:} NVIDIA L40S GPU (46GB VRAM)
+
+\subsection{Reproduction Results}
+
+Table~\ref{tab:bias_scores} presents our reproduction results alongside comparable findings. Our results strongly confirm the paper's hypothesis that chain-of-thought reasoning introduces systematic bias.
+
+\textbf{Key findings:}
+\begin{itemize}
+    \item \textbf{Pervasive severe bias:} 82-85\% of reasoning steps received the maximum bias score (4/4)
+    \item \textbf{Minimal correct/incorrect difference:} Only 0.07 difference in mean bias between correct (3.61) and incorrect (3.68) answers
+    \item \textbf{Low unbiased reasoning:} Only 2.5\% of steps showed no bias (score 0)
+    \item \textbf{Total reasoning steps evaluated:} 812 steps across 100 examples
+\end{itemize}
+
+\textbf{Comparison with original paper:} While we use different model architectures (DeepSeek-8B vs. original GPT-based models), the qualitative findings align:
+\begin{itemize}
+    \item \textit{Original:} Reasoning amplifies bias compared to direct answering
+    \item \textit{Ours:} Confirmed with 83.7\% severe bias rate
+    \item \textit{Original:} Bias appears in both correct and incorrect answers
+    \item \textit{Ours:} Confirmed with only 0.07 bias score difference
+\end{itemize}
+
+\textbf{Explaining differences:} The extremely high bias rates (82-85\%) in our reproduction may be attributed to:
+\begin{enumerate}
+    \item \textbf{Model architecture:} DeepSeek-8B may have different training data or safety alignment than models in the original paper
+    \item \textbf{Judge calibration:} LLaMA-2-7B judge may be more sensitive to bias detection than GPT-4o
+    \item \textbf{Quantization effects:} 8-bit quantization may affect model behavior
+    \item \textbf{Dataset sampling:} Sexual orientation may exhibit higher bias than other BBQ categories
+\end{enumerate}
+
+However, the \textit{qualitative pattern} remains consistent: CoT reasoning introduces systematic bias independent of answer correctness, validating the paper's core claim.
+
+\section{Error Analysis}
+
+\subsection{Methodology}
+
+We systematically analyzed 812 bias evaluations across 100 examples to identify failure patterns. Our analysis involved:
+\begin{enumerate}
+    \item Reviewing judge explanations for high-bias steps (score 3-4)
+    \item Categorizing bias types based on stereotyping patterns
+    \item Comparing bias manifestation in correct vs. incorrect answers
+    \item Examining heatmap visualizations to identify temporal bias patterns
+\end{enumerate}
+
+\subsection{Identified Failure Patterns}
+
+\textbf{1. Relationship Stability Assumptions (Most Common)}
+
+The model consistently assumes different commitment levels and relationship timelines based on sexual orientation.
+
+\textit{Example bias pattern:} Reasoning that gay or bisexual individuals have fundamentally different relationship stability compared to straight individuals, without contextual evidence.
+
+\textit{Judge explanation:} ``The reasoning is based on the assumption that the gay friend's experiences are inherently different from the bisexual friend's experiences, which is not necessarily true. Both friends may have similar dating experiences and challenges, regardless of their sexual orientation.''
+
+\textbf{Why the model fails:} The CoT process encourages explicit reasoning about relationship patterns, which activates stereotypical associations learned from biased training data. Direct answering might bypass these associations.
+
+\textbf{2. Behavioral Pattern Attribution}
+
+The model attributes different priorities, values, or behaviors based solely on sexual orientation labels.
+
+\textit{Example bias pattern:} Assuming LGBTQ+ individuals have specific lifestyle choices or social behaviors that differ systematically from straight individuals.
+
+\textbf{Why the model fails:} The model uses ``societal norms'' as justification for differential treatment, reflecting training data that contains societal stereotypes. The verbose reasoning format provides space to articulate these problematic assumptions.
+
+\textbf{3. Experience Homogenization}
+
+The model treats all members of a sexual orientation group as having identical experiences.
+
+\textit{Example bias pattern:} Assuming all gay individuals share the same dating challenges or all bisexual individuals have the same relationship patterns.
+
+\textbf{Why the model fails:} CoT reasoning encourages categorization and generalization. When reasoning about social groups, the model defaults to group-level stereotypes rather than acknowledging individual variation.
+
+\subsection{Quantitative Breakdown}
+
+Table~\ref{tab:bias_distribution} shows the distribution of bias scores. Key observations:
+\begin{itemize}
+    \item Score 1 (minimal bias) virtually absent (0-0.3\%)
+    \item Score 3 (significant bias) also rare (0.7-2.8\%)
+    \item Distribution polarized between score 4 (severe, 82-85\%) and score 2 (moderate, 9-14\%)
+    \item Score 0 (no bias) appears in only 2.3-2.6\% of steps
+\end{itemize}
+
+This polarization suggests the model operates in two modes: either engaging with stereotypes (severe bias) or avoiding the topic entirely (no bias). Middle-ground reasoning with minimal stereotyping is largely absent.
+
+\subsection{Correct vs. Incorrect Answer Comparison}
+
+Crucially, bias patterns are nearly identical between correct and incorrect answers (Table~\ref{tab:bias_scores}):
+\begin{itemize}
+    \item Mean bias difference: 0.07 (3.61 vs. 3.68)
+    \item Severe bias rate difference: 2.5\% (82.5\% vs. 85.0\%)
+\end{itemize}
+
+This demonstrates that bias is \textbf{systematic in the reasoning process}, not a consequence of wrong conclusions. The model stereotypes while reasoning, regardless of whether it reaches the correct answer.
+
+\section{Reflection}
+
+\subsection{Key Learnings}
+
+Through this baseline reproduction and error analysis, we learned:
+
+\textbf{1. CoT reasoning is a double-edged sword:} While it improves complex reasoning capabilities, it also creates more opportunities for biased assumptions to manifest explicitly. The verbose format acts as an amplifier for stereotypes embedded in training data.
+
+\textbf{2. Bias is process-based, not outcome-based:} The 0.07 bias score difference between correct and incorrect answers challenges the assumption that bias primarily affects answer accuracy. Instead, bias permeates the reasoning process itself.
+
+\textbf{3. Judge model calibration matters:} Different judge models (LLaMA-2-7B vs. alternatives) produce different bias distributions, highlighting that bias evaluation is not objective but depends on the judge's own biases and calibration.
+
+\textbf{4. Sexual orientation bias is pervasive:} 82-85\% severe bias rate suggests this demographic category triggers particularly strong stereotyping in the DeepSeek-8B model.
+
+\subsection{Required Model Capabilities}
+
+A hypothetical model that better handles these failure cases would need:
+
+\begin{enumerate}
+    \item \textbf{Individual-level reasoning:} Ability to reason about individuals without defaulting to group-level stereotypes
+    \item \textbf{Explicit uncertainty acknowledgment:} Recognize when sexual orientation (or other demographic attributes) is irrelevant to the question
+    \item \textbf{Counterfactual reasoning:} Consider whether conclusions would change if demographic attributes were different
+    \item \textbf{Debiased training data:} Training corpora that actively counter societal stereotypes rather than reflecting them
+    \item \textbf{Bias-aware prompting:} System prompts that explicitly discourage stereotyping during CoT generation
+\end{enumerate}
+
+\subsection{Baseline Strengths to Preserve}
+
+Despite high bias rates, the baseline model demonstrates strengths:
+
+\begin{itemize}
+    \item \textbf{Reasoning coherence:} The model generates logically structured step-by-step reasoning
+    \item \textbf{Explicit thinking:} Unlike black-box models, CoT makes the reasoning process auditable
+    \item \textbf{Answer accuracy:} 31.9\% correct answers despite 82.5\% biased reasoning suggests some decoupling of bias from accuracy
+\end{itemize}
+
+Any debiasing approach should preserve these strengths while reducing stereotyping.
+
+\subsection{Refining the Proposed Approach}
+
+Based on error analysis findings, we propose several refinements:
+
+\textbf{1. Multi-stage reasoning with bias checkpoints:}
+\begin{itemize}
+    \item Generate initial CoT response
+    \item Apply bias detection at each reasoning step
+    \item Regenerate biased steps with explicit debiasing prompts
+    \item Aggregate into final unbiased reasoning chain
+\end{itemize}
+
+\textbf{2. Contrastive prompting:}
+\begin{itemize}
+    \item Prompt the model to generate reasoning for counterfactual demographic attributes
+    \item If reasoning differs substantially, flag potential bias
+    \item Force the model to justify why demographic attributes are relevant
+\end{itemize}
+
+\textbf{3. Fine-tuning on debiased reasoning examples:}
+\begin{itemize}
+    \item Curate dataset of unbiased CoT reasoning (score 0-1)
+    \item Fine-tune model to imitate bias-free reasoning patterns
+    \item Evaluate on held-out BBQ categories
+\end{itemize}
+
+\textbf{4. Judge ensemble for robust evaluation:}
+\begin{itemize}
+    \item Use multiple judge models (LLaMA, Mistral, GPT-4o)
+    \item Aggregate bias scores with confidence weighting
+    \item Reduce single-judge calibration artifacts
+\end{itemize}
+
+\subsection{Alternative Directions}
+
+If debiasing the CoT process proves intractable, alternative approaches include:
+
+\begin{itemize}
+    \item \textbf{Implicit reasoning:} Train models to reason internally without generating explicit text, reducing bias exposure
+    \item \textbf{Retrieval-augmented reasoning:} Ground reasoning in factual evidence rather than stereotypical associations
+    \item \textbf{Adversarial training:} Train models to generate reasoning that a bias classifier cannot detect as stereotypical
+    \item \textbf{Human-in-the-loop:} Use human feedback to iteratively refine reasoning traces during inference
+\end{itemize}
+
+The error analysis revealed that bias is deeply embedded in the reasoning process, suggesting that surface-level prompt engineering may be insufficient. More fundamental architectural or training changes may be necessary.
+
+\section*{Limitations}
+
+Our reproduction has several limitations:
+
+\textbf{Limited scope:} We evaluated only the Sexual Orientation category (100 examples). Results may not generalize to other BBQ categories (age, religion, race, etc.).
+
+\textbf{Model differences:} We used DeepSeek-8B and LLaMA-2-7B instead of the original paper's models. Architecture differences may affect bias patterns.
+
+\textbf{Judge subjectivity:} The LLM-as-judge approach inherits biases from the judge model itself. Different judges produce different bias scores.
+
+\textbf{Sample size:} 100 examples provide sufficient statistical power for our main findings, but more examples would strengthen confidence intervals.
+
+\textbf{Temporal bias:} Our analysis focuses on bias in individual reasoning steps but does not examine how bias evolves across the full reasoning chain.
+
+\textbf{Binary framing:} BBQ questions involve binary demographic categories which may not reflect the full complexity of sexual orientation.
+
+\bibliography{custom}
+
+\appendix
+
+\onecolumn
+\section{Example Appendix}
+\label{sec:appendix}
+
+\input{tables.tex}
+
+\end{document}

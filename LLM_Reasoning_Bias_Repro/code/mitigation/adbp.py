@@ -1,6 +1,6 @@
 import pandas as pd
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from tqdm import tqdm
 import copy 
 import statistics
@@ -44,9 +44,21 @@ args = parser.parse_args()
 device = torch.device('cuda:'+ str(args.gpu))
 df = pd.read_json(args.jsonfilename, lines=True)
 
-# Initialize LLM
+# Initialize LLM with 8-bit quantization and CPU offloading
 model_name = args.modelid
-model = AutoModelForCausalLM.from_pretrained(model_name, device_map='cuda:'+ str(args.gpu))
+
+# Configure 8-bit quantization with CPU offloading
+quantization_config = BitsAndBytesConfig(
+    load_in_8bit=True,
+    llm_int8_enable_fp32_cpu_offload=True  # Enable CPU offloading for 8-bit
+)
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_name, 
+    device_map='auto',  # Auto-distribute across GPU/CPU
+    quantization_config=quantization_config,
+    max_memory={args.gpu: "8GB", "cpu": "20GB"}  # Limit GPU usage, offload to CPU
+)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 def complete_chat0(model, tokenizer, messages, max_new_tokens=2048):

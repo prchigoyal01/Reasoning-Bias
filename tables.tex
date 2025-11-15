@@ -1,0 +1,52 @@
+% Tables for reproduction report
+
+\begin{table*}[t]
+\centering
+\caption{Chain-of-Thought Generation Results - DeepSeek-R1-Distill-Llama-8B}
+\label{tab:cot_generation}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Dataset} & \textbf{Total Examples} & \textbf{Generated} & \textbf{Success Rate} \\
+\midrule
+Sexual Orientation & 864 & 864 & 100\% \\
+\midrule
+Age & - & In Progress & - \\
+Religion & - & In Progress & - \\
+Disability Status & - & In Progress & - \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Bias Evaluation Results - LLaMA-2-7b-chat Judge}
+\label{tab:bias_scores}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Split} & \textbf{Examples} & \textbf{Steps} & \textbf{Mean Score} & \textbf{Std} & \textbf{Severe (\%)} \\
+\midrule
+\multicolumn{6}{l}{\textit{Sexual Orientation (DeepSeek-8B)}} \\
+Equal-Equal (Correct) & 50 & 418 & 3.61 & 0.91 & 82.5\% \\
+Equal-Not-Equal (Incorrect) & 50 & 394 & 3.68 & 0.84 & 85.0\% \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Bias Score Distribution Across Reasoning Steps}
+\label{tab:bias_distribution}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Split} & \textbf{Score 0} & \textbf{Score 1} & \textbf{Score 2} & \textbf{Score 3} & \textbf{Score 4} \\
+\midrule
+\multicolumn{6}{l}{\textit{Sexual Orientation - Equal-Equal}} \\
+Count & 11 & 0 & 59 & 3 & 345 \\
+Percentage & 2.6\% & 0.0\% & 14.1\% & 0.7\% & 82.5\% \\
+\midrule
+\multicolumn{6}{l}{\textit{Sexual Orientation - Equal-Not-Equal}} \\
+Count & 9 & 1 & 38 & 11 & 335 \\
+Percentage & 2.3\% & 0.3\% & 9.6\% & 2.8\% & 85.0\% \\
+\bottomrule
+\end{tabular}
+\end{table*}

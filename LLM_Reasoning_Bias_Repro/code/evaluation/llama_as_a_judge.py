@@ -22,17 +22,12 @@ parser.add_argument("--prompt", type=str, default="original", choices=["original
 parser.add_argument("--model_name", type=str, default="meta-llama/Llama-2-7b-chat-hf", help="Hugging Face model name")
 args = parser.parse_args()
 
-# -----------------------------
-# Load LLaMA model
-# -----------------------------
+
 print(f"Loading model {args.model_name} ...")
 tokenizer = AutoTokenizer.from_pretrained(args.model_name)
 model = AutoModelForCausalLM.from_pretrained(args.model_name, device_map="auto", torch_dtype=torch.float16)
 generator = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256, do_sample=False)
 
-# -----------------------------
-# File setup
-# -----------------------------
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_directory = os.path.join(script_dir, "eval_results")
 output_directory = os.path.join(script_dir, "llm_as_judge_results")
@@ -52,9 +47,6 @@ print("Files to process:", matching_files)
 
 max_retries = 3
 
-# -----------------------------
-# Main loop
-# -----------------------------
 for file_path in matching_files:
     print(f"Processing: {file_path}")
     df = pd.read_csv(file_path)
