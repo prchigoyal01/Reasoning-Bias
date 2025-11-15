@@ -51,36 +51,13 @@ def format_prompt(example, sys_inst):
     return {"prompt_text": text}
 
 
-def inference_setup(model_name):
+def setup_dataset():
     sys_inst = get_system_instruction()  # Evaluate sys_inst only once
     ds = load_dataset("toxigen/toxigen-data", "train")
     ds = ds['train'].shuffle(seed=42).select(range(LAST_CHKPT, TOTAL_SAMPLES))
     dataset = Dataset.from_list(ds)
     dataset = dataset.map(lambda example: format_prompt(example, sys_inst))
-    
-    bnb_config_4bit = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",          # most memory-efficient format
-        bnb_4bit_compute_dtype=torch.float16  # use bfloat16 if your GPU supports it
-    )
-    bnb_config_8bit = BitsAndBytesConfig(
-        load_in_8bit=True,
-        llm_int8_threshold=6.0,
-        llm_int8_has_fp16_weights=True,
-        bnb_8bit_compute_dtype=torch.float16,  # or torch.bfloat16 if supported
-    )
-
-    # Load the model in 8-bit precision
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        device_map="auto", # Automatically distributes the model across available GPUs
-        quantization_config = bnb_config_8bit,
-        # offload_folder="./offload",       # folder for CPU offload weights
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    return model, tokenizer, dataset
+    return dataset
 
 def _is_wrong_conclusion(prompt_label, conclusion_text, output_text):
     # Bias undetected
@@ -134,7 +111,28 @@ def batch_generate_responses(model, tokenizer, batch):
     return results
 
 def generate_sft_data():
-    model, tokenizer, dataset = inference_setup(TEACHER_MODEL_NAME)
+    bnb_config_4bit = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",          # most memory-efficient format
+        bnb_4bit_compute_dtype=torch.float16  # use bfloat16 if your GPU supports it
+    )
+    bnb_config_8bit = BitsAndBytesConfig(
+        load_in_8bit=True,
+        llm_int8_threshold=6.0,
+        llm_int8_has_fp16_weights=True,
+        bnb_8bit_compute_dtype=torch.float16,  # or torch.bfloat16 if supported
+    )
+
+    # Load the model in 8-bit precision
+    model = AutoModelForCausalLM.from_pretrained(
+        TEACHER_MODEL_NAME,
+        device_map="auto", # Automatically distributes the model across available GPUs
+        quantization_config = bnb_config_8bit,
+        # offload_folder="./offload",       # folder for CPU offload weights
+    )
+    tokenizer = AutoTokenizer.from_pretrained(TEACHER_MODEL_NAME)
+    dataset = setup_dataset()
     
     batch_size = BATCH_SIZE
     for i in tqdm(range(0, len(dataset), batch_size)):

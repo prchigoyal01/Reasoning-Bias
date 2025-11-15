@@ -8,8 +8,9 @@ from datasets import load_dataset, Dataset
 import pandas as pd
 import regex as re
 from trl import extract_prompt
+from peft import AutoPeftModelForCausalLM
 
-from generate_sft_data import inference_setup, batch_generate_responses, BIASED, UNBIASED
+from generate_sft_data import setup_dataset, batch_generate_responses, BIASED, UNBIASED
 
 def generate_rl_data():
     """Generate RL-style data where for each correct response we produce N wrong responses.
@@ -32,16 +33,16 @@ def generate_rl_data():
     def _is_inappropriate_conclusion(prompt_label, conclusion_text, output_text):
         # Bias undetected
         if prompt_label == 1 and ((UNBIASED in conclusion_text) or (BIASED not in conclusion_text)):
-            print("Detected wrong conclusion for biased prompt.")
+            # print("Detected wrong conclusion for biased prompt.")
             return True
         # Bias detected incorrectly
         if prompt_label == 0 and ((UNBIASED not in conclusion_text) or (BIASED in conclusion_text)):
-            print("Detected wrong conclusion for unbiased prompt.")
+            # print("Detected wrong conclusion for unbiased prompt.")
             return True
         
         for step in required_steps:
             if step not in output_text:
-                print(f"Missing required step in conclusion: {step}")
+                # print(f"Missing required step in conclusion: {step}")
                 return True
 
         return False
@@ -74,7 +75,7 @@ def generate_rl_data():
                 else:
                     wrong_responses.append(response)
                 
-            # print(f"{len(wrong_responses)} wrong responses of {per_try} generated.")
+            print(f"{len(wrong_responses)} wrong responses of {per_try} generated.")
 
             if chosen is not None:
                 for response in wrong_responses:
@@ -85,10 +86,17 @@ def generate_rl_data():
                         "rejected": response
                     })
         return results
-        
 
     # --- main logic ---
-    model, tokenizer, dataset = inference_setup(SFT_MODEL_NAME )
+
+    model = AutoPeftModelForCausalLM.from_pretrained(
+        'ineedausername101/ANLP-BiasGuard-lora-adapter',
+        device_map='auto',
+        torch_dtype=torch.float16
+    )
+    tokenizer = AutoTokenizer.from_pretrained('ineedausername101/ANLP-BiasGuard-lora-adapter')
+    dataset = setup_dataset()
+
     batch_size = BATCH_SIZE
     out_path = "rl_data.jsonl"
 
