@@ -1,0 +1,162 @@
+Bias Heatmap Statistics Summary
+============================================================
+
+
+Age
+------------------------------------------------------------
+
+Correct:
+  Examples: 300
+  Mean bias: 2.194 ± 0.442
+  Range: [1.160, 4.000]
+
+Incorrect:
+  Examples: 300
+  Mean bias: 1.125 ± 0.620
+  Range: [0.000, 3.160]
+
+Incorrect Ambig:
+  Examples: 122
+  Mean bias: 0.771 ± 0.550
+  Range: [0.000, 2.140]
+
+Incorrect Disambig:
+  Examples: 178
+  Mean bias: 1.368 ± 0.543
+  Range: [0.000, 3.160]
+
+Disabilitystatus
+------------------------------------------------------------
+
+Correct:
+  Examples: 300
+  Mean bias: 2.428 ± 0.459
+  Range: [1.800, 3.800]
+
+Incorrect:
+  Examples: 300
+  Mean bias: 1.544 ± 0.600
+  Range: [0.000, 3.720]
+
+Incorrect Ambig:
+  Examples: 148
+  Mean bias: 1.303 ± 0.590
+  Range: [0.000, 2.500]
+
+Incorrect Disambig:
+  Examples: 152
+  Mean bias: 1.780 ± 0.509
+  Range: [0.000, 3.720]
+
+Genderidentity
+------------------------------------------------------------
+
+Correct:
+  Examples: 300
+  Mean bias: 2.046 ± 0.344
+  Range: [0.400, 3.720]
+
+Incorrect:
+  Examples: 300
+  Mean bias: 1.052 ± 0.688
+  Range: [0.000, 3.800]
+
+Incorrect Ambig:
+  Examples: 132
+  Mean bias: 0.687 ± 0.524
+  Range: [0.000, 2.090]
+
+Incorrect Disambig:
+  Examples: 168
+  Mean bias: 1.339 ± 0.665
+  Range: [0.000, 3.800]
+
+Nationality
+------------------------------------------------------------
+
+Correct:
+  Examples: 300
+  Mean bias: 2.432 ± 0.505
+  Range: [1.340, 4.000]
+
+Raceethnicity
+------------------------------------------------------------
+
+Correct:
+  Examples: 300
+  Mean bias: 2.266 ± 0.602
+  Range: [0.200, 4.000]
+
+Incorrect:
+  Examples: 300
+  Mean bias: 1.442 ± 0.942
+  Range: [0.000, 4.000]
+
+Incorrect Ambig:
+  Examples: 118
+  Mean bias: 0.851 ± 0.710
+  Range: [0.000, 2.300]
+
+Incorrect Disambig:
+  Examples: 182
+  Mean bias: 1.826 ± 0.872
+  Range: [0.000, 4.000]
+
+Religion
+------------------------------------------------------------
+
+Correct:
+  Examples: 300
+  Mean bias: 2.486 ± 0.556
+  Range: [0.820, 4.000]
+
+Incorrect:
+  Examples: 300
+  Mean bias: 1.268 ± 0.765
+  Range: [0.000, 3.000]
+
+Incorrect Ambig:
+  Examples: 114
+  Mean bias: 0.869 ± 0.705
+  Range: [0.000, 2.490]
+
+Incorrect Disambig:
+  Examples: 186
+  Mean bias: 1.513 ± 0.694
+  Range: [0.000, 3.000]
+
+Ses
+------------------------------------------------------------
+
+Incorrect:
+  Examples: 300
+  Mean bias: 1.553 ± 0.738
+  Range: [0.000, 3.560]
+
+Incorrect Ambig:
+  Examples: 141
+  Mean bias: 1.064 ± 0.652
+  Range: [0.000, 2.570]
+
+Incorrect Disambig:
+  Examples: 159
+  Mean bias: 1.986 ± 0.503
+  Range: [0.800, 3.560]
+
+Sexualorientation
+------------------------------------------------------------
+
+Incorrect:
+  Examples: 300
+  Mean bias: 1.241 ± 0.685
+  Range: [0.000, 3.800]
+
+Incorrect Ambig:
+  Examples: 134
+  Mean bias: 1.112 ± 0.731
+  Range: [0.000, 3.800]
+
+Incorrect Disambig:
+  Examples: 166
+  Mean bias: 1.346 ± 0.626
+  Range: [0.090, 3.500]

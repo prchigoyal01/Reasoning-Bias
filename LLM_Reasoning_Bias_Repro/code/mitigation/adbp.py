@@ -44,24 +44,22 @@ args = parser.parse_args()
 device = torch.device('cuda:'+ str(args.gpu))
 df = pd.read_json(args.jsonfilename, lines=True)
 
-# Initialize LLM with 8-bit quantization and CPU offloading
+# Initialize LLM with 8-bit quantization (GPU only, no CPU offloading)
 model_name = args.modelid
 
-# Configure 8-bit quantization with CPU offloading
+# Configure 8-bit quantization for GPU only
 quantization_config = BitsAndBytesConfig(
-    load_in_8bit=True,
-    llm_int8_enable_fp32_cpu_offload=True  # Enable CPU offloading for 8-bit
+    load_in_8bit=True
 )
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name, 
-    device_map='auto',  # Auto-distribute across GPU/CPU
-    quantization_config=quantization_config,
-    max_memory={args.gpu: "8GB", "cpu": "20GB"}  # Limit GPU usage, offload to CPU
+    device_map=f'cuda:{args.gpu}',  # Force all on GPU
+    quantization_config=quantization_config
 )
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-def complete_chat0(model, tokenizer, messages, max_new_tokens=2048):
+def complete_chat0(model, tokenizer, messages, max_new_tokens=512):  # Reduced from 2048
     """
     Generates a model response to a prompt.
 
@@ -82,7 +80,8 @@ def complete_chat0(model, tokenizer, messages, max_new_tokens=2048):
             max_new_tokens=max_new_tokens,
             pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id,
-            do_sample=False)
+            do_sample=False,
+            num_beams=1)  # Greedy decoding for speed
         
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
@@ -113,22 +112,34 @@ new_log = [] # Model's final reasoning between two choices
 
 marker = "\nProvide explanation based on known facts or Stay unbiased if no facts are known.\n"
 
+# Open output file for incremental writing
+import csv
+import sys
+output_file = open(args.outputfilename, 'w', newline='', encoding='utf-8')
+csv_writer = csv.writer(output_file)
+csv_writer.writerow(['example_id', 'answer', 'label', 'logs', 'new_log'])
+output_file.flush()
+
 # Loops through each question from the input file
 for index, row in tqdm(df.iterrows(), total=df.shape[0]):
 
     # Example ID from BBQ dataset
-    example_ids.append(row['example_id'])
+    example_id = row['example_id']
 
     # Get reasoning chain from CoT repsonse
     thoughts = row['cot_response_v1'].split('\n\n')
 
     # Get ground-truth answer
-    labels.append(row['label'])
+    label = row['label']
     
     cands = []
     logs = []
+    new_log_entry = ''
 
-    # Loops through each reasoning step
+    # Loops through each reasoning step with early stopping
+    prev_answer = None
+    consecutive_same = 0
+    
     for i in range (len(thoughts)):
 
         prompt = copy.deepcopy(row['prompt'])
@@ -145,6 +156,15 @@ for index, row in tqdm(df.iterrows(), total=df.shape[0]):
         # Record final answer and reasoning at all steps
         cands.append(answer)
         logs.append(response)
+        
+        # Early stopping: if answer is stable for 3 consecutive steps, skip remaining
+        if answer == prev_answer and answer != "":
+            consecutive_same += 1
+            if consecutive_same >= 2:  # Stop after 3 same answers
+                break
+        else:
+            consecutive_same = 0
+        prev_answer = answer
 
     # Record reasoning at all steps
     logss.append(logs)
@@ -210,22 +230,12 @@ for index, row in tqdm(df.iterrows(), total=df.shape[0]):
             finalanswer = get_answer(response).strip()
 
             # Record model reasoning
-            new_log.append(response)
+            new_log_entry = response
     
-    # Record the final answer for each question under ADBP
-    answer_fix.append(finalanswer)
+    # Write this example's result immediately to CSV
+    csv_writer.writerow([example_id, finalanswer, label, str(logs), new_log_entry])
+    output_file.flush()  # Force write to disk
 
-    # If the last example did not have a new reasoning, add an empty one
-    if len(new_log) != len(example_ids):
-        new_log.append('')
-
-# Construct results as a dataframe
-results = pd.DataFrame({
-'example_id': example_ids,
-'answer': answer_fix,
-'label': labels,
-'logs': logss,
-'new_log': new_log})
-
-# Save the dataframe as a CSV file
-results.to_csv(args.outputfilename, index=False)
+# Close the output file
+output_file.close()
+print(f"\nResults saved to {args.outputfilename}")
