@@ -1,8 +1,8 @@
 from huggingface_hub import HfApi
 
 # Upload the entire LoRA adapter folder (48MB only - no merging needed!)
-adapter_path = "/home/ubuntu/NLP/MedhaRepro/Reasoning-Bias/BiasGuard/sft_model"
-repo_name = "ineedausername101/ANLP-BiasGuard-lora-adapter"
+adapter_path = "rl_model"
+repo_name = "RajMaheshwari/BiasGuard"
 
 print(f"Uploading LoRA adapter to {repo_name}...")
 print("This will upload ~48MB (adapter weights + tokenizer + config)")
