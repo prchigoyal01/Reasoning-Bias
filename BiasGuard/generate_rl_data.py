@@ -27,16 +27,24 @@ def generate_rl_data():
     sampling the model and selecting outputs whose conclusion indicates the opposite
     label (clear wrong answers). It writes results to `rl_data.jsonl`.
     """
+    required_steps = ["Step " + str(i) for i in range(1, 5)]
 
-    def _is_wrong_conclusion(prompt_label, conclusion_text):
-        # If the prompt expects biased (1), a wrong response is one that concludes UNBIASED.
-        # If the prompt expects unbiased (0), a wrong response is one that concludes BIASED.
-        if conclusion_text is None:
-            return False
-        if prompt_label == 1:
-            return (UNBIASED in conclusion_text) and (BIASED not in conclusion_text)
-        else:
-            return (BIASED in conclusion_text) and (UNBIASED not in conclusion_text)
+    def _is_inappropriate_conclusion(prompt_label, conclusion_text, output_text):
+        # Bias undetected
+        if prompt_label == 1 and ((UNBIASED in conclusion_text) or (BIASED not in conclusion_text)):
+            print("Detected wrong conclusion for biased prompt.")
+            return True
+        # Bias detected incorrectly
+        if prompt_label == 0 and ((UNBIASED not in conclusion_text) or (BIASED in conclusion_text)):
+            print("Detected wrong conclusion for unbiased prompt.")
+            return True
+        
+        for step in required_steps:
+            if step not in output_text:
+                print(f"Missing required step in conclusion: {step}")
+                return True
+
+        return False
 
     def _generate_preference_pairs(model, tokenizer, batch):
         """Attempt to collect up to n_wrong distinct wrong responses for a single prompt.
@@ -44,35 +52,52 @@ def generate_rl_data():
         We generate `per_try` samples for each input in the batch using a single model call.
         This is done by repeating each input `per_try` times and generating all at once.
         """
-        n_wrong = 3  # target number of wrong responses per prompt
-        per_try = 5  # samples to generate per input in a single call
-        
-        
-        
+        per_try = 8  # samples to generate per input in a single call
+        results = []
 
+        for prompt, prompt_text, label in zip(batch["prompt"], batch["prompt_text"], batch["prompt_label"]):
+            minibatch = {
+                "prompt": [prompt] * per_try,
+                "prompt_label": [label] * per_try,
+                "prompt_text": [prompt_text] * per_try,
+            }
+            outputs = batch_generate_responses(model, tokenizer, minibatch)
+            
+            chosen = None
+            wrong_responses = []
+            for out in outputs:
+                response = out["response"]
+                conclusion = out["conclusion"]
+
+                if not _is_inappropriate_conclusion(label, conclusion, response):
+                    chosen = response
+                else:
+                    wrong_responses.append(response)
+                
+            # print(f"{len(wrong_responses)} wrong responses of {per_try} generated.")
+
+            if chosen is not None:
+                for response in wrong_responses:
+                    results.append({
+                        "prompt": prompt,
+                        "label": label,
+                        "chosen": chosen,
+                        "rejected": response
+                    })
+        return results
         
 
     # --- main logic ---
-    model, tokenizer, dataset = inference_setup(SFT_MODEL_NAME)
+    model, tokenizer, dataset = inference_setup(SFT_MODEL_NAME )
     batch_size = BATCH_SIZE
     out_path = "rl_data.jsonl"
 
     with open(out_path, "a") as f:
         for i in tqdm(range(0, len(dataset), batch_size)):
             batch = dataset[i : i + batch_size]
-            correct_responses = batch_generate_responses(model, tokenizer, batch)
-            if not correct_responses:
-                continue
-
-            for resp in correct_responses:
-                prompt = resp["prompt"]
-                label = resp.get("label", None)
-                chosen = resp["response"]
-
-                # generate N wrong responses for this prompt
-                pairs = _generate_preference_pairs(model, tokenizer, prompt, chosen, label)
-                for row in pairs:
-                    f.write(json.dumps(row) + "\n")
+            pairs = _generate_preference_pairs(model, tokenizer, batch)
+            for row in pairs:
+                f.write(json.dumps(row) + "\n")
 
 
 if __name__ == "__main__":

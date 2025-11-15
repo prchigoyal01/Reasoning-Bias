@@ -85,18 +85,18 @@ def inference_setup(model_name):
 def _is_wrong_conclusion(prompt_label, conclusion_text, output_text):
     # Bias undetected
     if prompt_label == 1 and ((UNBIASED in conclusion_text) or (BIASED not in conclusion_text)):
-        print("Detected wrong conclusion for biased prompt.")
+        # print("Detected wrong conclusion for biased prompt.")
         return True
     # Bias detected incorrectly
     if prompt_label == 0 and ((UNBIASED not in conclusion_text) or (BIASED in conclusion_text)):
-        print("Detected wrong conclusion for unbiased prompt.")
+        # print("Detected wrong conclusion for unbiased prompt.")
         return True
     if len(output_text) < len(conclusion_text) + len(prompt_label): # not enough thinking steps
-        print("Too short output, likely missing steps.")
+        # print("Too short output, likely missing steps.")
         return True
     return False
 
-def batch_generate_responses(model, tokenizer, batch, is_wrong):
+def batch_generate_responses(model, tokenizer, batch):
     results = []
     inputs = tokenizer(
         batch["prompt_text"],
@@ -123,16 +123,14 @@ def batch_generate_responses(model, tokenizer, batch, is_wrong):
         conclusion = re.search(r"## Conclusion ##:\s*(.*)", output)
         if conclusion:
             conclusion = conclusion.group(1).strip()
-            print(f"Prompt Label: {prompt_label}, Conclusion: {conclusion}")
-            if not is_wrong(prompt_label, conclusion, output):
-                finetune_row = {
-                    "prompt": prompt,
-                    "label": prompt_label,
-                    "response": output,
-                    "conclusion": conclusion
-                }
-                results.append(finetune_row)
-    print(len(results), "valid responses generated in batch of size", len(batch['prompt_text']))
+            # print(f"Prompt Label: {prompt_label}, Conclusion: {conclusion}")
+            finetune_row = {
+                "prompt": prompt,
+                "label": prompt_label,
+                "response": output,
+                "conclusion": conclusion
+            }
+            results.append(finetune_row)
     return results
 
 def generate_sft_data():
@@ -140,7 +138,8 @@ def generate_sft_data():
     
     batch_size = BATCH_SIZE
     for i in tqdm(range(0, len(dataset), batch_size)):
-        batch_results = batch_generate_responses(model, tokenizer, dataset[i:i+batch_size], _is_wrong_conclusion)
+        batch_results = batch_generate_responses(model, tokenizer, dataset[i:i+batch_size])
+        batch_results = [res for res in batch_results if not _is_wrong_conclusion(res["prompt"], res["conclusion"], res["response"])]
 
         with open(SFT_DATA_PATH, "a") as f:
             for row in batch_results:
