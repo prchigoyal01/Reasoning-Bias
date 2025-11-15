@@ -38,63 +38,19 @@ def generate_rl_data():
         else:
             return (BIASED in conclusion_text) and (UNBIASED not in conclusion_text)
 
-    def _generate_preference_pairs(model, tokenizer, prompt_text, prompt_label, max_tries=8, per_try=4):
+    def _generate_preference_pairs(model, tokenizer, batch):
         """Attempt to collect up to n_wrong distinct wrong responses for a single prompt.
 
-        We batch `per_try` samples per generate call by repeating the input tensors.
+        We generate `per_try` samples for each input in the batch using a single model call.
+        This is done by repeating each input `per_try` times and generating all at once.
         """
-        n_wrong = 8  # specified in the paper
-        collected = []
-        seen = set()
-        input_enc = tokenizer(
-            prompt_text,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            add_special_tokens=False,
-        ).to(model.device)
+        n_wrong = 3  # target number of wrong responses per prompt
+        per_try = 5  # samples to generate per input in a single call
+        
+        
+        
 
-        input_ids = input_enc["input_ids"]
-
-        for _ in range(max_tries):
-            # repeat inputs so generate returns multiple samples in one call
-            rep_input_ids = input_ids.repeat_interleave(per_try, dim=0)
-            rep_attention_mask = None
-            if "attention_mask" in input_enc:
-                rep_attention_mask = input_enc["attention_mask"].repeat_interleave(per_try, dim=0)
-
-            with torch.no_grad():
-                outputs = model.generate(
-                    input_ids=rep_input_ids,
-                    attention_mask=rep_attention_mask,
-                    max_new_tokens=2048,
-                    do_sample=True,
-                    temperature=1.2,
-                    num_return_sequences=per_try,
-                )
-
-            # decode and split per sample
-            decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-
-            # each decoded includes the prompt + generated continuation; strip prompt prefix
-            for seq in decoded:
-                # remove the prompt_text prefix if present to get the generated continuation
-                gen = seq
-                if seq.startswith(prompt_text):
-                    gen = seq[len(prompt_text):].strip()
-
-                # extract conclusion (same logic as batch_generate_responses)
-                m = re.search(r"## Conclusion ##:\s*(.*)", seq)
-                if m:
-                    conclusion = m.group(1).strip()
-                    if _is_wrong_conclusion(prompt_label, conclusion):
-                        # deduplicate by generated text
-                        if gen not in seen and gen and gen != "":
-                            seen.add(gen)
-                            collected.append({"response": seq, "conclusion": conclusion})
-                            if len(collected) >= n_wrong:
-                                return collected
-        return collected
+        
 
     # --- main logic ---
     model, tokenizer, dataset = inference_setup(SFT_MODEL_NAME)
