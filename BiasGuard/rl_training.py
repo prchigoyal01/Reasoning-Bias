@@ -5,13 +5,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model
 from config import *
 
-import torch
-from trl import SFTTrainer, DPOTrainer, DPOConfig
-from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
-from peft import LoraConfig, get_peft_model, AutoPeftModelForCausalLM
-from config import *
-
 torch.cuda.empty_cache()
 
 def preprocess_function(example):
