@@ -180,7 +180,7 @@
       "special": false
     }
   },
-  "bos_token": "<｜begin▁of▁sentence｜>",
+  "bos_token": "<｜end▁of▁sentence｜>",
   "clean_up_tokenization_spaces": false,
   "eos_token": "<｜end▁of▁sentence｜>",
   "extra_special_tokens": {},
