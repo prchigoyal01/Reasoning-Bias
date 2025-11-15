@@ -1,0 +1,260 @@
+nohup: ignoring input
+Found 19 files to process
+
+
+============================================================
+Processing: Age
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Age_correct.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 2.194 ± 0.442
+  Range: [1.160, 4.000]
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Age_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.125 ± 0.620
+  Range: [0.000, 3.160]
+
+📊 By Context Condition
+  ✓ Saved: Age_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 122
+  Mean bias: 0.771 ± 0.550
+  Range: [0.000, 2.140]
+  ✓ Saved: Age_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 178
+  Mean bias: 1.368 ± 0.543
+  Range: [0.000, 3.160]
+
+============================================================
+Processing: Disabilitystatus
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Disabilitystatus_correct.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 2.428 ± 0.459
+  Range: [1.800, 3.800]
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Disabilitystatus_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.544 ± 0.600
+  Range: [0.000, 3.720]
+
+📊 By Context Condition
+  ✓ Saved: Disabilitystatus_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 148
+  Mean bias: 1.303 ± 0.590
+  Range: [0.000, 2.500]
+  ✓ Saved: Disabilitystatus_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 152
+  Mean bias: 1.780 ± 0.509
+  Range: [0.000, 3.720]
+
+============================================================
+Processing: Genderidentity
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Genderidentity_correct.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 2.046 ± 0.344
+  Range: [0.400, 3.720]
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Genderidentity_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.052 ± 0.688
+  Range: [0.000, 3.800]
+
+📊 By Context Condition
+  ✓ Saved: Genderidentity_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 132
+  Mean bias: 0.687 ± 0.524
+  Range: [0.000, 2.090]
+  ✓ Saved: Genderidentity_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 168
+  Mean bias: 1.339 ± 0.665
+  Range: [0.000, 3.800]
+
+============================================================
+Processing: Nationality
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Nationality_correct.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 2.432 ± 0.505
+  Range: [1.340, 4.000]
+
+============================================================
+Processing: Physicalappearance
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Physicalappearance_correct.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 2.383 ± 0.511
+  Range: [1.680, 4.000]
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Physicalappearance_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.702 ± 0.735
+  Range: [0.000, 4.000]
+
+📊 By Context Condition
+  ✓ Saved: Physicalappearance_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 98
+  Mean bias: 1.165 ± 0.604
+  Range: [0.000, 2.280]
+  ✓ Saved: Physicalappearance_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 202
+  Mean bias: 1.963 ± 0.645
+  Range: [0.000, 4.000]
+
+============================================================
+Processing: Raceethnicity
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Raceethnicity_correct.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 2.266 ± 0.602
+  Range: [0.200, 4.000]
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Raceethnicity_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.442 ± 0.942
+  Range: [0.000, 4.000]
+
+📊 By Context Condition
+  ✓ Saved: Raceethnicity_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 118
+  Mean bias: 0.851 ± 0.710
+  Range: [0.000, 2.300]
+  ✓ Saved: Raceethnicity_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 182
+  Mean bias: 1.826 ± 0.872
+  Range: [0.000, 4.000]
+
+============================================================
+Processing: Religion
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Religion_correct.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 2.486 ± 0.556
+  Range: [0.820, 4.000]
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Religion_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.268 ± 0.765
+  Range: [0.000, 3.000]
+
+📊 By Context Condition
+  ✓ Saved: Religion_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 114
+  Mean bias: 0.869 ± 0.705
+  Range: [0.000, 2.490]
+  ✓ Saved: Religion_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 186
+  Mean bias: 1.513 ± 0.694
+  Range: [0.000, 3.000]
+
+============================================================
+Processing: Ses
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ✓ Saved: Ses_correct.pdf
+Statistics:
+  Examples: 269
+  Mean bias: 2.378 ± 0.528
+  Range: [1.180, 4.000]
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Ses_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.553 ± 0.738
+  Range: [0.000, 3.560]
+
+📊 By Context Condition
+  ✓ Saved: Ses_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 141
+  Mean bias: 1.064 ± 0.652
+  Range: [0.000, 2.570]
+  ✓ Saved: Ses_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 159
+  Mean bias: 1.986 ± 0.503
+  Range: [0.800, 3.560]
+
+============================================================
+Processing: Sexualorientation
+============================================================
+
+📊 Correct Answers (equal_equal)
+  ⚠️  No data to plot for heatmap_visualizations/Sexualorientation/Sexualorientation_correct.pdf
+Statistics: No data available
+
+📊 Incorrect Answers (equal_not_equal)
+  ✓ Saved: Sexualorientation_incorrect.pdf
+Statistics:
+  Examples: 300
+  Mean bias: 1.241 ± 0.685
+  Range: [0.000, 3.800]
+
+📊 By Context Condition
+  ✓ Saved: Sexualorientation_incorrect_ambig.pdf
+Ambiguous Context:
+  Examples: 134
+  Mean bias: 1.112 ± 0.731
+  Range: [0.000, 3.800]
+  ✓ Saved: Sexualorientation_incorrect_disambig.pdf
+Disambiguated Context:
+  Examples: 166
+  Mean bias: 1.346 ± 0.626
+  Range: [0.090, 3.500]
+
+============================================================
+Saving summary statistics...
+============================================================
+✓ Summary saved to heatmap_visualizations/statistics_summary.txt
+
+============================================================
+✅ All heatmaps generated in: heatmap_visualizations
+============================================================
