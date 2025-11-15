@@ -11,34 +11,6 @@ The paper investigates whether chain-of-thought (CoT) reasoning introduces or am
 - Bias accumulates through reasoning steps (measured via ADBP - Answer Distribution as Bias Proxy)
 - Larger models (32B) show more bias introduction than smaller models (8B)
 
-## Repository Structure
-
-```
-LLM_Reasoning_Bias_Repro/
-├── datasets/
-│   └── bbq_csv/              # BBQ dataset in CSV format
-│       ├── age.csv
-│       ├── sexualOrientation.csv
-│       ├── religion.csv
-│       ├── disabilityStatus.csv
-│       ├── physicalAppearance.csv
-│       ├── nationality.csv
-│       ├── genderIdentity.csv
-│       ├── ses.csv
-│       ├── raceEthnicity.csv
-│       ├── raceXSes.csv
-│       └── raceXGender.csv
-│
-└── code/
-    ├── evaluation/
-    │   ├── generate_cot_responses.py    # Generate CoT reasoning for BBQ examples
-    │   ├── llama_as_a_judge.py          # Evaluate bias in reasoning steps
-    │   ├── llm_as_judge_heatmaps.ipynb  # Visualize bias scores
-    │   └── eval_results/                # Generated CoT responses (CSV)
-    │
-    └── mitigation/                       # Bias mitigation strategies (future work)
-```
-
 ## Setup
 
 ### Requirements
@@ -97,7 +69,6 @@ done' > generation.log 2>&1 &
 - `--max_new_tokens`: Max tokens to generate per response (512 is optimal)
 - `--batch_size`: Batch size for generation (8 recommended for L40S GPU)
 - `--model_name`: Model to use (default: `deepseek-ai/DeepSeek-R1-Distill-Llama-8B`)
-- `--use_flash_attn`: Enable Flash Attention 2 (requires flash-attn package)
 - `--compile`: Compile model with torch.compile for speedup
 
 **Output:**
@@ -131,10 +102,6 @@ nohup python llama_as_a_judge.py \
 **Output:**
 - `llm_as_judge_results/{Category}_llama_majority_voting_5_original.jsonl` - Bias scores per reasoning step
 
-### 3. Visualize Results
-
-Open `llm_as_judge_heatmaps.ipynb` to generate heatmaps and analyze bias patterns.
-
 ## Dataset Details
 
 **BBQ Format:**
@@ -153,28 +120,9 @@ Open `llm_as_judge_heatmaps.ipynb` to generate heatmaps and analyze bias pattern
 **Generation Speed:**
 - Batch size 8 + 512 tokens: ~15-20 sec/batch (8 examples)
 - Full dataset (3,936 examples): ~3-4 hours
-- With Flash Attention 2: 2-3x speedup (requires installation)
 
 **Memory:**
 - 8B model (8-bit): ~12-15GB VRAM
-- 32B model (8-bit): ~35-40GB VRAM
-
-## Replication Status
-
-- ✅ CoT generation pipeline
-- ✅ equal_equal / equal_not_equal split
-- ✅ LLM-as-Judge bias scoring
-- ✅ Predicted answer extraction
-- ⚠️ ADBP (Answer Distribution as Bias Proxy) - In progress
-- ⚠️ Stepwise evaluation - In progress
-
-## Known Issues
-
-1. **~7% of responses miss `<answer>` tag** due to 512 token limit
-   - Increase to 768 tokens if needed for higher completion rate
-2. **DeepSeek model uses `<think>` tags** in output
-   - Can be stripped post-processing if needed
-3. **Chat template artifacts** (`<｜Assistant｜>`) appear in some outputs
 
 ## Citation
 
