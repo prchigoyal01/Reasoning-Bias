@@ -34,9 +34,9 @@ MAIN_SCRIPT="/jet/home/pgoyal2/Reasoning-Bias/src/main.py"
 BATCH_SIZE=2
 
 # Models
-LLAMA_3_1="meta-llama/Llama-3.1-8B-Instruct"
-LLAMA_2="meta-llama/Llama-2-7b-chat-hf"
-DEEPSEEK_R1="deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+# LLAMA_3_1="meta-llama/Llama-3.1-8B-Instruct"
+# LLAMA_2="meta-llama/Llama-2-7b-chat-hf"
+# DEEPSEEK_R1="deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
 
 # Languages
 LANGUAGES=("en" "es" "tr" "nl")

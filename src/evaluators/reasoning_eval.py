@@ -33,15 +33,18 @@ class ReasoningEvaluator:
             if not torch.cuda.is_available():
                 raise RuntimeError("CUDA not available! vLLM requires GPU.")
             self.model = LLM(
-                        model=model_name,
-                        dtype="float16",            # or "fp16" if bf16 not supported
-                        # maybe specify device_map, quantization, etc
-                        # e.g.: load_in_4bit=True if supported
-                        # additional engine kwargs: max_batch_size, num_workers, etc
-                        tensor_parallel_size=1,  # Add this: use 1 GPU
-                        gpu_memory_utilization=0.9,  # Optional: use 90% of GPU memory
-                        trust_remote_code=True,
-                    )
+                    model="deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",   # base model
+                    dtype="float16",
+                    tensor_parallel_size=1,
+                    gpu_memory_utilization=0.9,
+                    trust_remote_code=True,
+
+                    # >>>>>>> IMPORTANT LORA SETTINGS <<<<<<<<
+                    enable_lora=True,  
+                    peft_model_adapters=["RajMaheshwari/BiasGuard"],
+                    # or older vLLM versions:
+                    # peft_model_id="RajMaheshwari/BiasGuard",
+                )
             self.sampling_params = SamplingParams(
                                     max_tokens=self.max_tokens,
                                     temperature=self.temperature,

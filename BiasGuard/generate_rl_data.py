@@ -12,6 +12,7 @@ from peft import AutoPeftModelForCausalLM
 
 from generate_sft_data import setup_dataset, batch_generate_responses, BIASED, UNBIASED
 
+
 def generate_rl_data():
     """Generate RL-style data where for each correct response we produce N wrong responses.
 

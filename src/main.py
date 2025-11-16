@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument(
         "--model_name",
         type=str,
-        required=True,
+        required=False, #for vllm on RajMaheshwari/BiasGuard
         help="Model name)"
     )
     

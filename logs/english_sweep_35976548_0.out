@@ -1,0 +1,8 @@
+========================================================================
+SLURM Job: 35976557 | Task: 0
+Language:  en
+Category:  Age
+Eval Mode: short_answer
+========================================================================
+INFO 11-15 18:58:20 [__init__.py:216] Automatically detected platform cuda.
+✗ FAILED (exit code: 2)

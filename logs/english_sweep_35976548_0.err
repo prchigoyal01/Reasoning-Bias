@@ -1,0 +1,10 @@
+/ocean/projects/cis250182p/pgoyal2/conda_envs/MBBQEnv/lib/python3.10/site-packages/transformers/utils/hub.py:110: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+usage: main.py [-h] [--model_name MODEL_NAME] --eval_mode
+               {short_answer,reasoning,cot} --language {en,es,tr,nl}
+               --data_dir DATA_DIR --category
+               {Age,Age_control,Disability_status,Disability_status_control,Gender_identity,Gender_identity_control,Physical_appearance,Physical_appearance_control,SES,SES_control,Sexual_orientation,Sexual_orientation_control}
+               [--temperature TEMPERATURE] [--max_tokens MAX_TOKENS]
+               [--batch_size BATCH_SIZE] [--output_dir OUTPUT_DIR]
+               [--seed SEED]
+main.py: error: argument --batch_size: expected one argument
