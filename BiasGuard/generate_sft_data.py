@@ -87,7 +87,7 @@ def batch_generate_responses(model, tokenizer, batch):
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=2048, # specified in the paper
+            max_new_tokens=512, # specified in the paper
             temperature=0.7,
             do_sample=True,
         )

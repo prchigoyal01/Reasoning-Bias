@@ -1,13 +1,17 @@
 import torch
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, get_peft_model, AutoPeftModelForCausalLM
 from config import *
 from trl import DPOConfig, DPOTrainer
 
 torch.cuda.empty_cache()
 
+# --------------------------
+# 1. Preprocess dataset
+# --------------------------
 def preprocess_function(example):
+    # Keep your original preprocessing EXACTLY the same
     return {
         "chosen": [{
             "content": example["prompt"].strip(),
@@ -32,78 +36,113 @@ train_test_split = dataset.train_test_split(test_size=0.1, seed=42)
 train_data = train_test_split["train"]
 test_data = train_test_split["test"]
 
-model = AutoPeftModelForCausalLM.from_pretrained(
-    'ineedausername101/ANLP-BiasGuard-lora-adapter',
-    device_map='auto',
+
+# ----------------------------------------------------------
+# 2. LOAD SFT LoRA + BASE MODEL (correctly)
+# ----------------------------------------------------------
+# IMPORTANT: AutoPeftModelForCausalLM loads base model automatically 
+# if your adapter_config.json has base_model_name_or_path set correctly.
+
+print("Loading SFT model + adapter...")
+sft_model = AutoPeftModelForCausalLM.from_pretrained(
+    "ineedausername101/ANLP-BiasGuard-lora-adapter",
+    device_map="auto",
     torch_dtype=torch.float16
 )
-tokenizer = AutoTokenizer.from_pretrained('ineedausername101/ANLP-BiasGuard-lora-adapter')
+tokenizer = AutoTokenizer.from_pretrained("ineedausername101/ANLP-BiasGuard-lora-adapter")
 
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
-tokenizer.bos_token_id = model.config.bos_token_id
 
-# Configure LoRA for efficient fine-tuning on quantized model
+
+# ----------------------------------------------------------
+# 3. MERGE LoRA → base model (critical fix)
+# ----------------------------------------------------------
+print("Merging LoRA into base model...")
+sft_model = sft_model.merge_and_unload()   # <--- FIX
+
+
+# ----------------------------------------------------------
+# 4. Create DPO LoRA on top of merged base model
+# ----------------------------------------------------------
+print("Applying NEW LoRA for DPO...")
+
 lora_config = LoraConfig(
-    r=16,  # LoRA rank
-    lora_alpha=32,  # LoRA scaling
-    target_modules=["q_proj", "v_proj"],  # Target attention layers
+    r=16,
+    lora_alpha=32,
+    target_modules=["q_proj", "v_proj"],
     lora_dropout=0.05,
-    bias="none",
     task_type="CAUSAL_LM",
+    bias="none",
 )
 
-# Apply LoRA to the quantized model
-model = get_peft_model(model, lora_config)
+model = get_peft_model(sft_model, lora_config)
 model.print_trainable_parameters()
 
+
+# ----------------------------------------------------------
+# 5. Create frozen reference model  (Required for DPO)
+# ----------------------------------------------------------
+print("Loading reference model (frozen)...")
+
+ref_model = AutoModelForCausalLM.from_pretrained(
+    tokenizer.name_or_path,  # same base model
+    device_map="auto",
+    torch_dtype=torch.float16
+)
+
+
+# ----------------------------------------------------------
+# 6. DPO Training
+# ----------------------------------------------------------
 training_args = DPOConfig(
     output_dir=RL_MODEL_PATH,
-    num_train_epochs=5,
-    per_device_train_batch_size=1,  # Reduced from 4 to fit in memory
-    per_device_eval_batch_size=1,   # Reduced from 4
-    gradient_accumulation_steps=4,  # Accumulate gradients (effective batch size = 4)
+    num_train_epochs=2,
+    per_device_train_batch_size=1,
+    per_device_eval_batch_size=1,
+    gradient_accumulation_steps=4,
     learning_rate=2e-4,
     warmup_steps=100,
     logging_steps=5,
     eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
-    torch_empty_cache_steps=10,  # Clear cache periodically
-    optim="paged_adamw_8bit",  # Use 8-bit optimizer to save memory
+    optim="paged_adamw_8bit",
 )
 
 trainer = DPOTrainer(
     model=model,
+    ref_model=ref_model,
     train_dataset=train_data,
     eval_dataset=test_data,
     processing_class=tokenizer,
     args=training_args,
 )
+
 trainer.train()
 
-# Evaluate
-metrics = trainer.evaluate()
-print("Evaluation metrics:", metrics)
 
-# Save the LoRA adapter (not the full model since it's quantized)
-print("Saving LoRA adapter...")
+# ----------------------------------------------------------
+# 7. Save DPO LoRA adapter
+# ----------------------------------------------------------
+print("Saving DPO LoRA adapter...")
 model.save_pretrained(RL_MODEL_PATH)
 tokenizer.save_pretrained(RL_MODEL_PATH)
 
-print(f"Model saved to {RL_MODEL_PATH}")
+print(f"Model saved to: {RL_MODEL_PATH}")
 
-# Verify the saved model can be loaded
-print("Verifying saved model integrity...")
+# ----------------------------------------------------------
+# 8. Validate saved adapter
+# ----------------------------------------------------------
+print("Verifying LoRA adapter file...")
 try:
     from safetensors import safe_open
     import os
     adapter_path = os.path.join(RL_MODEL_PATH, "adapter_model.safetensors")
     with safe_open(adapter_path, framework="pt", device="cpu") as f:
         keys = list(f.keys())
-        print(f"✓ Successfully saved {len(keys)} adapter weights")
-        print(f"✓ File size: {os.path.getsize(adapter_path) / (1024*1024):.1f} MB")
+        print(f"✓ Adapter contains {len(keys)} tensors.")
 except Exception as e:
-    print(f"⚠ Warning: Could not verify saved model: {e}")
+    print(f"Warning: {e}")
 
-print("To load: use AutoPeftModelForCausalLM.from_pretrained('" + RL_MODEL_PATH + "')")
+print(f"To load later: AutoPeftModelForCausalLM.from_pretrained('{RL_MODEL_PATH}')")

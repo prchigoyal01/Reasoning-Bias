@@ -6,6 +6,7 @@ tags:
 - base_model:adapter:deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
 - dpo
 - lora
+- transformers
 - trl
 ---
 

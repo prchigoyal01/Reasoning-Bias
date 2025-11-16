@@ -20,11 +20,11 @@ api.create_repo(
 
 # Upload the adapter folder
 print("Uploading files...")
-api.upload_folder(
+api.upload_large_folder(
     folder_path=adapter_path,
     repo_id=repo_name,
     repo_type="model",
-    commit_message="Upload BiasGuard LoRA adapter",
+    # commit_message="Upload BiasGuard LoRA adapter",
     ignore_patterns=["checkpoint-*"]
 )
 
