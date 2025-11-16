@@ -1,0 +1,5 @@
+test_type,group,metric,H,p,category
+cross-lingual,llama-3.1-8b-instruct,bias_amb,224.0145984752111,2.721774251431052e-48,"en,es,tr,nl"
+cross-lingual,llama-3.1-8b-instruct,bias_dis,534.4657554877231,1.6178793235705184e-115,"en,es,tr,nl"
+cross-category,llama-3.1-8b-instruct,bias_amb,40.529760868156025,2.9028750874379164e-05,"age,age_control,disability_status,disability_status_control,gender_identity,gender_identity_control,physical_appearance,physical_appearance_control,ses,ses_control,sexual_orientation,sexual_orientation_control"
+cross-category,llama-3.1-8b-instruct,bias_dis,713.9097379145065,5.621696639376284e-146,"age,age_control,disability_status,disability_status_control,gender_identity,gender_identity_control,physical_appearance,physical_appearance_control,ses,ses_control,sexual_orientation,sexual_orientation_control"
