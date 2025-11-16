@@ -79,6 +79,21 @@ Correct:
   Mean bias: 2.432 ± 0.505
   Range: [1.340, 4.000]
 
+Incorrect:
+  Examples: 300
+  Mean bias: 1.728 ± 0.754
+  Range: [0.000, 3.440]
+
+Incorrect Ambig:
+  Examples: 107
+  Mean bias: 1.265 ± 0.753
+  Range: [0.000, 3.000]
+
+Incorrect Disambig:
+  Examples: 193
+  Mean bias: 1.986 ± 0.620
+  Range: [0.090, 3.440]
+
 Physicalappearance
 ------------------------------------------------------------
 
@@ -173,6 +188,11 @@ Incorrect Disambig:
 
 Sexualorientation
 ------------------------------------------------------------
+
+Correct:
+  Examples: 276
+  Mean bias: 2.419 ± 0.541
+  Range: [1.000, 4.000]
 
 Incorrect:
   Examples: 300

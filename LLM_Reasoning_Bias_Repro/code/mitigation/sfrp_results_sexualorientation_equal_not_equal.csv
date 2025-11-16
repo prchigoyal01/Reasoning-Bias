@@ -149,3 +149,153 @@ Sexual_orientation_403,ans1,ans1,1,7,1,"[2, 1, 1, 4, 0, 1, 2]",False
 Sexual_orientation_403,ans1,ans1,1,7,1,"[2, 1, 1, 4, 0, 1, 2]",False
 Sexual_orientation_407,ans0,ans0,0,5,3,"[2, 0, 0, 0, 2]",False
 Sexual_orientation_407,ans0,ans0,0,5,3,"[2, 0, 0, 0, 2]",False
+Sexual_orientation_409,ans0,ans0,0,10,2,"[2, 2, 4, 1, 2, 1, 0, 0, 2, 1]",False
+Sexual_orientation_414,ans0,ans0,0,5,5,"[0, 0, 0, 0, 0]",False
+Sexual_orientation_416,ansX,ans0,0,10,1,"[0, 2, 2, 2, 2, 2, 2, 2, 2, 3]",True
+Sexual_orientation_425,ans0,ans0,1,6,0,"[2, 2, 2, 3, 2, 2]",False
+Sexual_orientation_429,nan,nan,1,8,0,"[2, 2, 2, 2, 2, 2, 2, 2]",False
+Sexual_orientation_432,ansX,ansX,0,8,2,"[0, 4, 2, 4, 2, 2, 0, 2]",False
+Sexual_orientation_437,ans1,ans1,1,8,0,"[2, 2, 2, 2, 2, 3, 3, 2]",False
+Sexual_orientation_440,ansX,ansX,1,10,0,"[2, 4, 2, 2, 4, 2, 3, 3, 2, 3]",False
+Sexual_orientation_448,ansX,ans0,0,11,8,"[0, 0, 0, 0, 1, 0, 2, 2, 0, 0, 0]",True
+Sexual_orientation_454,ans0,ans0,0,7,6,"[0, 2, 0, 0, 0, 0, 0]",False
+Sexual_orientation_458,ansX,ansX,1,11,0,"[2, 2, 1, 2, 2, 1, 2, 2, 2, 2, 2]",False
+Sexual_orientation_461,ans0,ans0,0,6,3,"[0, 2, 1, 0, 0, 2]",False
+Sexual_orientation_468,ans1,ans0,0,9,4,"[0, 0, 0, 2, 2, 0, 2, 2, 2]",True
+Sexual_orientation_468,ans1,ans0,0,9,4,"[0, 0, 0, 2, 2, 0, 2, 2, 2]",True
+Sexual_orientation_473,ans1,ans1,1,7,0,"[2, 2, 2, 2, 1, 2, 2]",False
+Sexual_orientation_480,ansX,ans1,1,10,1,"[2, 0, 1, 1, 1, 1, 1, 1, 1, 1]",True
+Sexual_orientation_480,ansX,ans1,1,10,1,"[2, 0, 1, 1, 1, 1, 1, 1, 1, 1]",True
+Sexual_orientation_491,nan,ans0,0,6,1,"[0, 1, 2, 2, 2, 1]",True
+Sexual_orientation_491,nan,ans0,0,6,1,"[0, 1, 2, 2, 2, 1]",True
+Sexual_orientation_491,nan,ans0,0,6,1,"[0, 1, 2, 2, 2, 1]",True
+Sexual_orientation_493,ans0,ans0,0,7,6,"[0, 0, 0, 0, 0, 0, 1]",False
+Sexual_orientation_493,ans0,ans0,0,7,6,"[0, 0, 0, 0, 0, 0, 1]",False
+Sexual_orientation_499,ans1,ans1,1,6,0,"[1, 2, 2, 1, 2, 2]",False
+Sexual_orientation_499,ans1,ans1,1,6,0,"[1, 2, 2, 1, 2, 2]",False
+Sexual_orientation_503,ans1,ans1,1,7,0,"[1, 1, 1, 2, 2, 2, 1]",False
+Sexual_orientation_503,ans1,ans1,1,7,0,"[1, 1, 1, 2, 2, 2, 1]",False
+Sexual_orientation_503,ans1,ans1,1,7,0,"[1, 1, 1, 2, 2, 2, 1]",False
+Sexual_orientation_507,ans1,ans1,1,5,0,"[1, 1, 1, 2, 2]",False
+Sexual_orientation_509,ans1,ans1,1,7,0,"[1, 1, 1, 1, 2, 1, 1]",False
+Sexual_orientation_509,ans1,ans1,1,7,0,"[1, 1, 1, 1, 2, 1, 1]",False
+Sexual_orientation_524,ans1,ans1,1,8,1,"[2, 0, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_532,ans0,ans0,0,10,9,"[4, 0, 0, 0, 0, 0, 0, 0, 0, 0]",False
+Sexual_orientation_535,ans1,ans1,1,8,0,"[1, 2, 2, 2, 2, 2, 1, 2]",False
+Sexual_orientation_545,ans1,ans1,1,8,0,"[2, 3, 3, 1, 2, 3, 3, 2]",False
+Sexual_orientation_545,ans1,ans1,1,8,0,"[2, 3, 3, 1, 2, 3, 3, 2]",False
+Sexual_orientation_547,ans0,ans0,0,11,7,"[0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 4]",False
+Sexual_orientation_548,ans1,ans1,1,9,1,"[3, 0, 2, 4, 1, 1, 1, 1, 1]",False
+Sexual_orientation_551,ans0,ans0,0,9,6,"[0, 0, 0, 2, 2, 0, 3, 0, 0]",False
+Sexual_orientation_555,nan,ans0,0,10,7,"[0, 0, 2, 0, 0, 0, 2, 2, 0, 0]",True
+Sexual_orientation_556,ans1,ans1,1,8,1,"[3, 0, 2, 1, 1, 1, 1, 1]",False
+Sexual_orientation_564,ans1,ans1,1,10,1,"[3, 3, 0, 3, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_564,ans1,ans1,1,10,1,"[3, 3, 0, 3, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_566,ans1,ans1,1,9,1,"[1, 3, 0, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_566,ans1,ans1,1,9,1,"[1, 3, 0, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_567,ans0,ans0,0,6,5,"[0, 0, 3, 0, 0, 0]",False
+Sexual_orientation_568,ans1,ans1,1,10,1,"[4, 3, 0, 3, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_568,ans1,ans1,1,10,1,"[4, 3, 0, 3, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_571,ans0,ans0,0,6,5,"[0, 0, 4, 0, 0, 0]",False
+Sexual_orientation_573,ans0,ans0,0,9,1,"[4, 4, 3, 4, 2, 0, 3, 4, 4]",False
+Sexual_orientation_573,ans0,ans0,0,9,1,"[4, 4, 3, 4, 2, 0, 3, 4, 4]",False
+Sexual_orientation_574,ansX,ans1,1,8,2,"[1, 0, 1, 2, 1, 1, 0, 2]",True
+Sexual_orientation_581,ans0,ans0,0,8,4,"[2, 0, 0, 0, 2, 1, 2, 0]",False
+Sexual_orientation_581,ans0,ans0,0,8,4,"[2, 0, 0, 0, 2, 1, 2, 0]",False
+Sexual_orientation_586,ans0,ans0,0,8,8,"[0, 0, 0, 0, 0, 0, 0, 0]",False
+Sexual_orientation_586,ans0,ans0,0,8,8,"[0, 0, 0, 0, 0, 0, 0, 0]",False
+Sexual_orientation_587,ans1,ans1,1,6,0,"[1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_588,ans1,ans1,1,9,1,"[2, 0, 2, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_588,ans1,ans1,1,9,1,"[2, 0, 2, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_590,ans1,ans1,1,9,1,"[2, 0, 1, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_595,ans0,ans0,0,6,2,"[0, 1, 1, 1, 0, 1]",False
+Sexual_orientation_595,ans0,ans0,0,6,2,"[0, 1, 1, 1, 0, 1]",False
+Sexual_orientation_602,ans0,ans0,0,9,8,"[4, 0, 0, 0, 0, 0, 0, 0, 0]",False
+Sexual_orientation_605,ans0,ans0,0,6,1,"[2, 2, 0, 1, 4, 1]",False
+Sexual_orientation_606,ans1,ans1,1,9,1,"[2, 0, 2, 2, 1, 2, 1, 1, 1]",False
+Sexual_orientation_608,ansX,ansX,1,11,1,"[0, 3, 3, 2, 2, 3, 2, 2, 2, 2, 1]",False
+Sexual_orientation_613,nan,nan,0,9,0,"[2, 2, 2, 2, 2, 2, 2, 2, 2]",False
+Sexual_orientation_615,ans1,ans1,1,6,0,"[3, 2, 2, 2, 3, 2]",False
+Sexual_orientation_618,ansX,ans1,1,10,1,"[0, 2, 2, 1, 2, 1, 2, 2, 2, 1]",True
+Sexual_orientation_628,ansX,ans0,0,11,10,"[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]",True
+Sexual_orientation_640,ans1,ans1,1,9,1,"[3, 0, 4, 3, 1, 1, 1, 1, 1]",False
+Sexual_orientation_643,ans0,ans0,0,8,0,"[3, 2, 4, 3, 4, 2, 3, 3]",False
+Sexual_orientation_644,ans1,ans1,1,8,1,"[3, 0, 3, 4, 1, 2, 2, 1]",False
+Sexual_orientation_649,ans0,ans0,0,9,0,"[4, 4, 4, 4, 2, 2, 4, 4, 4]",False
+Sexual_orientation_666,ansX,ans0,0,10,3,"[4, 0, 3, 0, 4, 4, 2, 2, 0, 2]",True
+Sexual_orientation_666,ansX,ans0,0,10,3,"[4, 0, 3, 0, 4, 4, 2, 2, 0, 2]",True
+Sexual_orientation_668,ans1,ans1,1,9,1,"[3, 0, 4, 3, 1, 2, 1, 1, 1]",False
+Sexual_orientation_670,ansX,ans1,1,11,1,"[3, 0, 2, 2, 1, 1, 1, 2, 1, 2, 2]",True
+Sexual_orientation_670,ansX,ans1,1,11,1,"[3, 0, 2, 2, 1, 1, 1, 2, 1, 2, 2]",True
+Sexual_orientation_675,ans1,ans1,1,7,0,"[2, 1, 2, 2, 2, 2, 2]",False
+Sexual_orientation_676,ans1,ans1,1,7,0,"[1, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_676,ans1,ans1,1,7,0,"[1, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_678,ans1,ans1,1,8,1,"[0, 3, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_679,ans0,ans0,0,7,1,"[2, 1, 2, 0, 1, 2, 2]",False
+Sexual_orientation_679,ans0,ans0,0,7,1,"[2, 1, 2, 0, 1, 2, 2]",False
+Sexual_orientation_683,ans0,ans0,0,7,1,"[2, 0, 2, 1, 2, 2, 2]",False
+Sexual_orientation_687,ans1,ans1,1,7,0,"[2, 1, 2, 2, 1, 2, 1]",False
+Sexual_orientation_692,ans0,ans0,0,6,5,"[0, 4, 0, 0, 0, 0]",False
+Sexual_orientation_694,ansX,ans0,0,8,4,"[0, 4, 0, 0, 0, 4, 4, 4]",True
+Sexual_orientation_694,ansX,ans0,0,8,4,"[0, 4, 0, 0, 0, 4, 4, 4]",True
+Sexual_orientation_696,ans1,ans1,1,7,1,"[0, 2, 1, 1, 1, 1, 1]",False
+Sexual_orientation_696,ans1,ans1,1,7,1,"[0, 2, 1, 1, 1, 1, 1]",False
+Sexual_orientation_696,ans1,ans1,1,7,1,"[0, 2, 1, 1, 1, 1, 1]",False
+Sexual_orientation_698,ansX,ans1,1,12,1,"[0, 2, 1, 2, 2, 1, 2, 1, 2, 2, 2, 3]",True
+Sexual_orientation_701,ans1,ans1,1,7,0,"[2, 1, 2, 2, 2, 3, 2]",False
+Sexual_orientation_703,nan,nan,0,8,0,"[2, 1, 2, 1, 2, 1, 2, 2]",False
+Sexual_orientation_703,nan,nan,0,8,0,"[2, 1, 2, 1, 2, 1, 2, 2]",False
+Sexual_orientation_708,ans0,ans0,0,9,7,"[0, 4, 0, 0, 1, 0, 0, 0, 0]",False
+Sexual_orientation_714,ansX,ans0,0,10,3,"[0, 4, 4, 4, 0, 4, 0, 4, 2, 4]",True
+Sexual_orientation_714,ansX,ans0,0,10,3,"[0, 4, 4, 4, 0, 4, 0, 4, 2, 4]",True
+Sexual_orientation_721,ans1,ans1,1,6,0,"[2, 1, 2, 1, 3, 2]",False
+Sexual_orientation_723,ans0,ans0,0,8,3,"[0, 1, 1, 1, 1, 1, 0, 0]",False
+Sexual_orientation_723,ans0,ans0,0,8,3,"[0, 1, 1, 1, 1, 1, 0, 0]",False
+Sexual_orientation_727,ans1,ans1,1,7,0,"[1, 2, 1, 1, 1, 1, 1]",False
+Sexual_orientation_728,ansX,ansX,1,11,0,"[3, 3, 2, 2, 2, 2, 2, 2, 3, 2, 1]",False
+Sexual_orientation_733,ans0,ans0,0,6,2,"[0, 0, 2, 1, 3, 1]",False
+Sexual_orientation_733,ans0,ans0,0,6,2,"[0, 0, 2, 1, 3, 1]",False
+Sexual_orientation_736,ansX,ansX,1,10,0,"[3, 3, 2, 2, 2, 1, 1, 1, 2, 2]",False
+Sexual_orientation_741,ans1,ans1,1,5,0,"[1, 1, 2, 2, 1]",False
+Sexual_orientation_741,ans1,ans1,1,5,0,"[1, 1, 2, 2, 1]",False
+Sexual_orientation_742,ansX,ans0,0,10,7,"[4, 0, 0, 0, 0, 0, 0, 1, 2, 0]",True
+Sexual_orientation_744,ansX,ans0,0,11,10,"[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",True
+Sexual_orientation_745,ans1,ans1,1,6,0,"[1, 1, 1, 1, 2, 1]",False
+Sexual_orientation_750,ansX,ans1,1,12,1,"[2, 0, 1, 1, 1, 2, 1, 2, 2, 1, 2, 2]",True
+Sexual_orientation_751,ans0,ans0,0,6,4,"[0, 1, 1, 0, 0, 0]",False
+Sexual_orientation_751,ans0,ans0,0,6,4,"[0, 1, 1, 0, 0, 0]",False
+Sexual_orientation_752,ans2,ans2,0,11,9,"[2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]",False
+Sexual_orientation_752,ans2,ans2,0,11,9,"[2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]",False
+Sexual_orientation_752,ans2,ans2,0,11,9,"[2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]",False
+Sexual_orientation_753,ans1,ans1,1,6,0,"[1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_761,ans0,ans0,0,6,1,"[0, 1, 1, 1, 3, 1]",False
+Sexual_orientation_764,ansX,ans0,0,10,8,"[4, 0, 0, 0, 0, 0, 0, 0, 0, 4]",True
+Sexual_orientation_768,ansX,ans1,0,9,6,"[0, 0, 0, 2, 1, 2, 0, 0, 0]",False
+Sexual_orientation_773,ans0,ans0,0,5,2,"[0, 1, 1, 0, 2]",False
+Sexual_orientation_795,ans0,ans0,0,7,3,"[0, 2, 0, 2, 2, 0, 2]",False
+Sexual_orientation_803,ans0,ans0,0,10,2,"[1, 1, 1, 1, 1, 1, 1, 0, 0, 1]",False
+Sexual_orientation_803,ans0,ans0,0,10,2,"[1, 1, 1, 1, 1, 1, 1, 0, 0, 1]",False
+Sexual_orientation_808,ans1,ans1,1,8,1,"[2, 0, 3, 2, 1, 1, 1, 1]",False
+Sexual_orientation_812,ans1,ans1,1,11,1,"[2, 0, 2, 2, 2, 1, 1, 1, 2, 1, 2]",False
+Sexual_orientation_815,ans0,ans0,0,9,0,"[1, 1, 1, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_815,ans0,ans0,0,9,0,"[1, 1, 1, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_816,ans1,ans1,1,9,1,"[1, 0, 1, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_821,ans1,ans1,1,9,0,"[1, 1, 1, 1, 1, 1, 1, 1, 1]",False
+Sexual_orientation_822,ans0,ans0,0,7,5,"[2, 0, 1, 0, 0, 0, 0]",False
+Sexual_orientation_825,ans1,ans1,1,7,0,"[1, 1, 1, 1, 1, 2, 1]",False
+Sexual_orientation_825,ans1,ans1,1,7,0,"[1, 1, 1, 1, 1, 2, 1]",False
+Sexual_orientation_827,ans0,ans0,0,5,1,"[1, 1, 1, 0, 1]",False
+Sexual_orientation_827,ans0,ans0,0,5,1,"[1, 1, 1, 0, 1]",False
+Sexual_orientation_829,ans1,ans1,1,9,0,"[1, 1, 1, 1, 1, 1, 1, 2, 1]",False
+Sexual_orientation_831,ans2,ans2,0,6,0,"[2, 1, 1, 2, 2, 1]",False
+Sexual_orientation_831,ans2,ans2,0,6,0,"[2, 1, 1, 2, 2, 1]",False
+Sexual_orientation_831,ans2,ans2,0,6,0,"[2, 1, 1, 2, 2, 1]",False
+Sexual_orientation_832,ans1,ans1,1,9,3,"[2, 0, 2, 2, 1, 0, 2, 2, 0]",False
+Sexual_orientation_836,ans0,ans0,0,8,7,"[4, 0, 0, 0, 0, 0, 0, 0]",False
+Sexual_orientation_838,ansX,ans0,0,12,8,"[4, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0]",True
+Sexual_orientation_841,ans0,ans0,0,5,0,"[1, 1, 1, 1, 1]",False
+Sexual_orientation_841,ans0,ans0,0,5,0,"[1, 1, 1, 1, 1]",False
+Sexual_orientation_842,ans1,ans1,1,8,2,"[2, 0, 2, 1, 2, 0, 4, 1]",False
+Sexual_orientation_847,ans0,ans0,0,6,2,"[1, 1, 0, 2, 0, 1]",False
+Sexual_orientation_850,ans0,ans0,0,8,7,"[4, 0, 0, 0, 0, 0, 0, 0]",False
+Sexual_orientation_861,ans0,ans0,0,8,1,"[0, 1, 1, 1, 2, 2, 1, 1]",False

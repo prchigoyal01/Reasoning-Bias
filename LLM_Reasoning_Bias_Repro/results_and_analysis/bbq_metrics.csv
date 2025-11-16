@@ -1,0 +1,10 @@
+Category,Acc_amb,Bias_amb,Acc_dis,Bias_dis
+Age,0.559,0.495,0.839,-0.478
+Disabilitystatus,0.565,0.506,0.909,-0.640
+Genderidentity,0.850,0.781,0.913,-0.678
+Nationality,0.762,0.677,0.815,-0.541
+Physicalappearance,0.647,0.581,0.699,-0.220
+Raceethnicity,0.864,0.838,0.859,-0.609
+Religion,0.527,0.442,0.794,-0.506
+Ses,0.637,0.568,0.826,-0.572
+Sexualorientation,0.562,0.484,0.821,-0.508

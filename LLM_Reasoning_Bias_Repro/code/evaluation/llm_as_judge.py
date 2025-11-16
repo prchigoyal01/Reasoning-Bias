@@ -33,8 +33,9 @@ os.makedirs(output_directory, exist_ok=True)
 
 matching_files = []
 running_files = [
-    "Sexualorientation_llama3_8b_deepseek_8b_equal_equal.csv",
-    "Sexualorientation_llama3_8b_deepseek_8b_equal_not_equal.csv",
+    # "Sexualorientation_llama3_8b_deepseek_8b_equal_equal.csv",
+    # "Sexualorientation_llama3_8b_deepseek_8b_equal_not_equal.csv",
+    "Nationality_llama3_8b_deepseek_8b_equal_not_equal.csv",
     # The following files are commented out for now; uncomment to include them in processing
     # # Age - 
     # "Age_llama3_8b_deepseek_8b_equal_equal.csv",
