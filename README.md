@@ -189,29 +189,12 @@ This project builds on:
 - DeepSeek Models: [Hugging Face Hub](https://huggingface.co/deepseek-ai)
 - TRL Documentation: [Transformers Reinforcement Learning](https://github.com/huggingface/trl)
 
-## ⚠️ Known Issues & Fixes
-
-See [TOKENIZATION_FIXES.md](TOKENIZATION_FIXES.md) for recent tokenization issue resolutions in the BiasGuard pipeline.
-
 ## 📝 Development Notes
 
 - Python 3.12 required for conda environment
 - GPU/CUDA support recommended for training
 - Models require HuggingFace authentication for access
 - Batch processing with vLLM for optimized inference speed
-
-## 🤝 Contributing
-
-When modifying the pipeline:
-1. Test changes with small data samples first
-2. Verify tokenization compatibility with target models
-3. Update configuration in `config.py` for new parameters
-4. Document changes in commit messages
-
-## 📄 License
-
-See LICENSE file in BBQ directory for dataset licensing information.
-
 ---
 
 **Last Updated:** November 2025
