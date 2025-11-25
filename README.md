@@ -191,7 +191,7 @@ This project builds on:
 
 ## 📝 Development Notes
 
-- Python 3.12 required for conda environment
+- Python 3.12+ required for conda environment
 - GPU/CUDA support recommended for training
 - Models require HuggingFace authentication for access
 - Batch processing with vLLM for optimized inference speed
