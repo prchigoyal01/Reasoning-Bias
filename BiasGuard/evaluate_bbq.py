@@ -1,36 +1,72 @@
 # evaluate_toxicity.py
 
 import numpy as np
-from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-import matplotlib.pyplot as plt
+from datasets import load_dataset, Dataset, concatenate_datasets
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from peft import AutoPeftModelForCausalLM
-from datasets import load_dataset, Dataset
-from config import *
-from tqdm.auto import tqdm
-from generate_sft_data import format_prompt, get_system_instruction, batch_generate_responses, BIASED, UNBIASED
+import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, confusion_matrix
+from tqdm.auto import tqdm
+
+from config import *
+from generate_sft_data import format_prompt, get_system_instruction, batch_generate_responses, BIASED, UNBIASED
 
 
 print("Loading dataset...")
 
-ds = load_dataset("compl-ai/redditbias")["train"]
+ds_age = load_dataset("walledai/BBQ")["age"]
+ds_gender = load_dataset("walledai/BBQ")["genderIdentity"]
+ds_religion = load_dataset("walledai/BBQ")["religion"]
+ds = concatenate_datasets([ds_age, ds_gender, ds_religion])
 ds = ds.shuffle(seed=42)
-
 dataset = Dataset.from_list(ds)
+
 sys_inst = get_system_instruction()  # Evaluate sys_inst only once
-dataset = dataset.rename_column("group_1_comment", "prompt")
-dataset = dataset.rename_column("group_1_bias_sent", "prompt_label")
+
+def expand_to_three_choices(example):
+    """
+    Expands each example into 3 rows - one for each choice.
+    The correct answer gets label 0 (unbiased).
+    The other 2 choices get label 1 (biased).
+    """
+    expanded_examples = []
+    answer_key = example['answer']
+    
+    for i, choice in enumerate(example['choices']):
+        # Find the other choice (assuming 2 choices)
+        other_choice = example['choices'][1 - i] if i <= 1 else None
+        
+        prompt = (
+            f"{example['context']}\n"
+            f"{choice} is the person who {example['question'][3:-1]}\n"
+        )
+        
+        if other_choice:
+            prompt += f"{other_choice} is not the person who {example['question'][3:-1]}\n"
+        
+        label = 0 if i == answer_key else 1
+        expanded_examples.append({
+            "prompt": prompt,
+            "prompt_label": label,
+        })
+    
+    return expanded_examples
+
+# Expand dataset to include all 3 choices per example
+expanded_data = []
+for example in dataset:
+    expanded_data.extend(expand_to_three_choices(example))
+dataset = Dataset.from_list(expanded_data)
 
 dataset = dataset.map(lambda example: format_prompt(example, sys_inst))
 
 print("Loading BiasGuard model...")
 
 # SFT
-model_name = "ineedausername101/ANLP-BiasGuard-lora-adapter"
+# model_name = "ineedausername101/ANLP-BiasGuard-lora-adapter"
 # DPO
-# model_name="/home/rajmahes/ANLP/Reasoning-Bias/BiasGuard/rl_model"
+model_name="/home/rajmahes/ANLP/Reasoning-Bias/BiasGuard/rl_model"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoPeftModelForCausalLM.from_pretrained(

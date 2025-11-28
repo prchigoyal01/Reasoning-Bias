@@ -1,4 +1,4 @@
-# evaluate_toxicity.py
+# valeriobasile/HatEval
 
 import numpy as np
 from datasets import load_dataset
@@ -15,28 +15,31 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 
 print("Loading dataset...")
 
-ds = load_dataset("compl-ai/redditbias")["train"]
+ds = load_dataset("valeriobasile/HatEval")["test"]
+
+ds = ds.filter(lambda example: example['language'] == 'es')  # Filter to only English examples
+
 ds = ds.shuffle(seed=42)
 
 dataset = Dataset.from_list(ds)
 sys_inst = get_system_instruction()  # Evaluate sys_inst only once
-dataset = dataset.rename_column("group_1_comment", "prompt")
-dataset = dataset.rename_column("group_1_bias_sent", "prompt_label")
+dataset = dataset.rename_column("text", "prompt")
+dataset = dataset.rename_column("HS", "prompt_label")
 
 dataset = dataset.map(lambda example: format_prompt(example, sys_inst))
 
 print("Loading BiasGuard model...")
 
 # SFT
-model_name = "ineedausername101/ANLP-BiasGuard-lora-adapter"
+# model_name = "ineedausername101/ANLP-BiasGuard-lora-adapter"
 # DPO
-# model_name="/home/rajmahes/ANLP/Reasoning-Bias/BiasGuard/rl_model"
+model_name="/home/rajmahes/ANLP/Reasoning-Bias/BiasGuard/rl_model"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoPeftModelForCausalLM.from_pretrained(
     model_name,
     device_map='auto',
-    torch_dtype=torch.float16
+    load_in_4bit=True,
 )
 model.eval()
 

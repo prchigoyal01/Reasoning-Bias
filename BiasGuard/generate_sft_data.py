@@ -73,6 +73,7 @@ def _is_wrong_conclusion(prompt_label, conclusion_text, output_text):
         return True
     return False
 
+@torch.no_grad()
 def batch_generate_responses(model, tokenizer, batch):
     results = []
     inputs = tokenizer(
