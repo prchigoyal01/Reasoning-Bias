@@ -1,19 +1,28 @@
 """
-Generate SFT training data for BiasGuard-MBBQ.
+Generate SFT training data for BiasGuard-MBBQ using vLLM.
 
-Uses reasoning from existing CoT evaluation results, truncating at answer markers.
+Reads BiasGuard-formatted MBBQ prompts and produces SFT rows by sampling
+reasoning traces from the teacher model.
 """
 
 import json
 import os
-import re
+import regex as re
+import torch
+
+from datasets import Dataset
 from tqdm import tqdm
+from vllm import LLM, SamplingParams
+
 from config_mbbq import (
-    RESULTS_DIR, MBBQ_DATA_DIR, CATEGORIES,
-    SFT_DATA_PATH, PROMPT_TEMPLATE_PATH, 
-    BIAS_TYPES_PATH, STANDARDS_PATH
+    SFT_DATA_PATH,
+    PROMPT_TEMPLATE_PATH,
+    BIAS_TYPES_PATH,
+    STANDARDS_PATH,
+    TEACHER_MODEL_NAME,
+    BATCH_SIZE,
+    MBBQ_BIASGUARD_PATH,
 )
-from convert_mbbq_to_biasguard import convert_mbbq_to_biasguard_format, load_mbbq_category
 
 BIASED = "Yes, the sentence is biased."
 UNBIASED = "No, the sentence is unbiased."
@@ -21,16 +30,16 @@ UNBIASED = "No, the sentence is unbiased."
 
 def get_mbbq_system_instruction():
     """Load MBBQ-specific bias types and standards."""
-    
-    with open(BIAS_TYPES_PATH, 'r') as f:
+
+    with open(BIAS_TYPES_PATH, "r", encoding="utf-8") as f:
         bias_dict = json.load(f)
         bias_types = ""
         for bias_name, bias in bias_dict.items():
             bias_types += "\n" + bias_name + ":\n"
             for k, v in bias.items():
                 bias_types += f"{k}: {v}\n"
-    
-    with open(STANDARDS_PATH, 'r') as f:
+
+    with open(STANDARDS_PATH, "r", encoding="utf-8") as f:
         standards_dict = json.load(f)
         standards = ""
         for _, standard in standards_dict.items():
@@ -38,7 +47,7 @@ def get_mbbq_system_instruction():
             for k, v in standard.items():
                 standards += f"{k}: {v}\n"
 
-    with open(PROMPT_TEMPLATE_PATH, 'r') as f:
+    with open(PROMPT_TEMPLATE_PATH, "r", encoding="utf-8") as f:
         prompt_template = json.load(f)
         prompt = ""
         for key, value in prompt_template.items():
@@ -60,271 +69,138 @@ def format_prompt(example, sys_inst):
     return {"prompt_text": text}
 
 
-def truncate_reasoning_at_answer(reasoning_text):
-    """
-    Truncate reasoning text at answer markers to avoid hallucinations.
-    
-    Looks for patterns like:
-    - "answer:"
-    - "answer is"
-    - "Answer:"
-    - "Answer is"
-    - "Final Answer:"
-    - "final answer:"
-    """
-    if not reasoning_text:
-        return ""
-    
-    # Patterns to match (case-insensitive)
-    patterns = [
-        r'\banswer\s*:\s*',
-        r'\banswer\s+is\s+',
-        r'\bfinal\s+answer\s*:\s*',
-        r'\bfinal\s+answer\s+is\s+',
-        r'\bAnswer\s*:\s*',
-        r'\bAnswer\s+is\s+',
-        r'\bFinal\s+Answer\s*:\s*',
-        r'\bFinal\s+Answer\s+is\s+',
-    ]
-    
-    text_lower = reasoning_text.lower()
-    min_idx = len(reasoning_text)
-    
-    for pattern in patterns:
-        match = re.search(pattern, text_lower, re.IGNORECASE)
-        if match:
-            idx = match.start()
-            if idx < min_idx:
-                min_idx = idx
-    
-    if min_idx < len(reasoning_text):
-        # Truncate at the answer marker
-        truncated = reasoning_text[:min_idx].strip()
-        return truncated
-    
-    return reasoning_text.strip()
+def load_biasguard_dataset():
+    """Load pre-converted BiasGuard examples and attach prompts."""
+    if not os.path.exists(MBBQ_BIASGUARD_PATH):
+        raise FileNotFoundError(
+            f"Expected BiasGuard-formatted data at {MBBQ_BIASGUARD_PATH}."
+        )
+
+    print(f"\nLoading BiasGuard-formatted data from {MBBQ_BIASGUARD_PATH} ...")
+    with open(MBBQ_BIASGUARD_PATH, "r", encoding="utf-8") as f:
+        records = [json.loads(line) for line in f if line.strip()]
+
+    sys_inst = get_mbbq_system_instruction()
+    dataset = Dataset.from_list(records)
+    dataset = dataset.map(lambda ex: {**ex, **format_prompt(ex, sys_inst)})
+    print(f"Loaded {len(dataset)} total prompts.")
+    return dataset
 
 
-def extract_conclusion_from_reasoning(reasoning_text, label):
-    """
-    Extract or construct conclusion from reasoning.
-    
-    Args:
-        reasoning_text: Full reasoning text
-        label: 0 (unbiased) or 1 (biased)
-    
-    Returns:
-        Conclusion string in BiasGuard format
-    """
-    # Look for existing conclusion
-    conclusion_patterns = [
-        r'##\s*Conclusion\s*##\s*:?\s*',
-        r'Conclusion\s*:?\s*',
-    ]
-    
-    for pattern in conclusion_patterns:
-        match = re.search(pattern, reasoning_text, re.IGNORECASE)
-        if match:
-            # Extract conclusion after the marker
-            conclusion = reasoning_text[match.end():].strip()
-            # Take first sentence or first 200 chars
-            if '\n' in conclusion:
-                conclusion = conclusion.split('\n')[0]
-            conclusion = conclusion[:200].strip()
-            
-            # Check if it already has the right format
-            if BIASED in conclusion or UNBIASED in conclusion:
-                return conclusion
-    
-    # Construct conclusion if not found
-    if label == 0:
-        conclusion = f"## Conclusion ##: {UNBIASED}"
-    else:
-        conclusion = f"## Conclusion ##: {BIASED}"
-    
-    return conclusion
+def _is_wrong_conclusion(label, conclusion_text):
+    """Quick sanity checks to keep only label-consistent completions."""
+    if not conclusion_text:
+        return True
+
+    conclusion_text = conclusion_text.strip()
+    if label == 1:
+        return UNBIASED in conclusion_text or BIASED not in conclusion_text
+    return UNBIASED not in conclusion_text or BIASED in conclusion_text
 
 
-def load_reasoning_results(category, results_dir=RESULTS_DIR):
-    """
-    Load reasoning outputs from CoT evaluation results.
-    
-    Note: Each MBBQ example has one reasoning output, but we create 3 BiasGuard examples.
-    We'll use the same reasoning for all 3 choices of the same MBBQ example.
-    
-    Returns:
-        Dict mapping example_id to reasoning text
-    """
-    # Find the results file
-    results_file = os.path.join(
-        results_dir, 
-        f"results_Llama-3.1-8B-Instruct_en_{category}_cot.json"
+def init_vllm_model():
+    """Create a vLLM generator that mirrors the BiasGuard teacher sampling."""
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA not available! vLLM generation requires a GPU.")
+
+    print("\nInitializing teacher model with vLLM...")
+    llm = LLM(
+        model=TEACHER_MODEL_NAME,
+        dtype="float16",
+        tensor_parallel_size=1,
+        gpu_memory_utilization=0.9,
+        trust_remote_code=True,
     )
-    
-    if not os.path.exists(results_file):
-        print(f"Warning: Results file not found: {results_file}")
-        return {}
-    
-    with open(results_file, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    
-    reasoning_outputs = data.get('reasoning_outputs', [])
-    
-    # Load original MBBQ data to map indices
-    mbbq_examples = load_mbbq_category(category)
-    
-    # Create mapping: example_id -> reasoning
-    # reasoning_outputs[i] corresponds to mbbq_examples[i] (in file order)
-    # We'll filter ambig examples later when processing
-    reasoning_map = {}
-    
-    for i, reasoning in enumerate(reasoning_outputs):
-        if i < len(mbbq_examples):
-            example_id = mbbq_examples[i].get('example_id', i)
-            reasoning_map[example_id] = reasoning
-    
-    return reasoning_map
+    sampling_params = SamplingParams(
+        max_tokens=512,
+        temperature=0.7,
+        top_p=1.0,
+    )
+    return llm, sampling_params
+
+
+def batch_generate_responses(llm, sampling_params, batch):
+    """Sample responses for a batch of prompts via vLLM."""
+    prompts = batch["prompt_text"]
+    categories = batch.get("category", [""] * len(prompts))
+    outputs = llm.generate(prompts, sampling_params)
+
+    results = []
+    for idx, output in enumerate(outputs):
+        generations = output.outputs
+        if not generations:
+            continue
+
+        text = generations[0].text.strip()
+        match = re.search(r"##\s*Conclusion\s*##\s*:?\s*(.*)", text)
+        conclusion = match.group(1).strip() if match else ""
+
+        results.append(
+            {
+                "prompt": batch["prompt"][idx],
+                "label": int(batch["prompt_label"][idx]),
+                "response": text,
+                "conclusion": conclusion,
+                "category": categories[idx],
+            }
+        )
+
+    return results
 
 
 def generate_sft_data_mbbq():
-    """Main function to generate SFT data from MBBQ using existing reasoning."""
-    
-    print("="*60)
-    print("Generating SFT Data for BiasGuard-MBBQ")
-    print("="*60)
-    
-    # Load system instruction
-    print("\nLoading system instruction...")
-    sys_inst = get_mbbq_system_instruction()
-    
-    # Convert MBBQ to BiasGuard format
-    print("\nConverting MBBQ to BiasGuard format...")
-    all_biasguard_examples = []
-    category_example_map = {}  # Map category to list of examples
-    
-    for category in CATEGORIES:
-        print(f"\nProcessing {category}...")
-        mbbq_examples = load_mbbq_category(category)
-        
-        # Load reasoning results for this category
-        reasoning_map = load_reasoning_results(category)
-        print(f"  Loaded {len(reasoning_map)} reasoning outputs")
-        
-        category_examples = []
-        for example in mbbq_examples:
-            # Filter out ambiguous examples (same as in convert_mbbq_to_biasguard.py)
-            if example.get('context_condition') == "ambig":
-                continue
-            
-            # Convert to BiasGuard format (this will filter out unknown answers)
-            # Returns list of 0-2 examples (0 if all answers were unknown, 1-2 if some were valid)
-            biasguard_examples = convert_mbbq_to_biasguard_format(example)
-            
-            # Skip if no valid examples (all answers were unknown)
-            if not biasguard_examples:
-                continue
-            
-            # Attach reasoning to each BiasGuard example
-            example_id = example.get('example_id', -1)
-            
-            # Get reasoning for this MBBQ example (same reasoning used for all choices)
-            reasoning = reasoning_map.get(example_id, "")
-            
-            for bg_ex in biasguard_examples:
-                
-                # Truncate at answer markers
-                reasoning_truncated = truncate_reasoning_at_answer(reasoning)
-                
-                # Extract or construct conclusion
-                conclusion = extract_conclusion_from_reasoning(reasoning_truncated, bg_ex['prompt_label'])
-                
-                # Combine reasoning and conclusion
-                if reasoning_truncated:
-                    response = reasoning_truncated + "\n\n" + conclusion
-                else:
-                    response = conclusion
-                
-                bg_ex['response'] = response
-                bg_ex['reasoning'] = reasoning_truncated
-                bg_ex['conclusion'] = conclusion
-                bg_ex['category'] = category
-                
-                category_examples.append(bg_ex)
-        
-        category_example_map[category] = category_examples
-        all_biasguard_examples.extend(category_examples)
-        print(f"  Created {len(category_examples)} examples for {category}")
-    
-    print(f"\nTotal examples: {len(all_biasguard_examples)}")
-    
-    # Format prompts
-    print("\nFormatting prompts...")
-    formatted_examples = []
-    for ex in tqdm(all_biasguard_examples):
-        formatted = format_prompt(ex, sys_inst)
-        formatted['prompt'] = ex['prompt']
-        formatted['prompt_label'] = ex['prompt_label']
-        formatted['response'] = ex['response']
-        formatted['conclusion'] = ex['conclusion']
-        formatted['category'] = ex.get('category', '')
-        formatted_examples.append(formatted)
-    
-    # Filter valid examples
-    print("\nFiltering valid examples...")
-    valid_examples = []
-    for ex in tqdm(formatted_examples):
-        response = ex['response']
-        conclusion = ex['conclusion']
-        label = ex['prompt_label']
-        
-        # Check if conclusion matches label
-        is_correct = (
-            (label == 0 and UNBIASED in conclusion and BIASED not in conclusion) or
-            (label == 1 and BIASED in conclusion and UNBIASED not in conclusion)
-        )
-        
-        # Basic quality checks
-        if is_correct and len(response) > 50:  # Minimum length
-            valid_examples.append({
-                "prompt": ex['prompt'],
-                "label": label,
-                "response": response,
-                "conclusion": conclusion,
-                "category": ex['category'],
-            })
-    
-    print(f"Valid examples: {len(valid_examples)} / {len(formatted_examples)}")
-    
-    # Save to file
-    print(f"\nSaving to {SFT_DATA_PATH}...")
-    with open(SFT_DATA_PATH, 'w', encoding='utf-8') as f:
-        for ex in valid_examples:
-            f.write(json.dumps(ex, ensure_ascii=False) + '\n')
-    
-    # Print statistics
-    print("\n" + "="*60)
-    print("Statistics:")
-    print("="*60)
+    """Main entrypoint to build SFT data from vLLM generations."""
+    print("=" * 60)
+    print("Generating SFT Data for BiasGuard-MBBQ (vLLM)")
+    print("=" * 60)
+
+    dataset = load_biasguard_dataset()
+    llm, sampling_params = init_vllm_model()
+
+    # Reset output file
+    if os.path.exists(SFT_DATA_PATH):
+        os.remove(SFT_DATA_PATH)
+
+    saved = 0
     label_counts = {}
     category_counts = {}
-    for ex in valid_examples:
-        label = ex['label']
-        category = ex['category']
-        label_counts[label] = label_counts.get(label, 0) + 1
-        category_counts[category] = category_counts.get(category, 0) + 1
-    
-    print(f"\nLabel distribution:")
+
+    for start in tqdm(
+        range(0, len(dataset), BATCH_SIZE), desc="Generating", dynamic_ncols=True
+    ):
+        end = start + BATCH_SIZE
+        batch = dataset[start:end]
+        batch_results = batch_generate_responses(llm, sampling_params, batch)
+        batch_results = [
+            res
+            for res in batch_results
+            if not _is_wrong_conclusion(res["label"], res["conclusion"])
+            and len(res["response"]) > 50
+        ]
+
+        if not batch_results:
+            continue
+
+        with open(SFT_DATA_PATH, "a", encoding="utf-8") as f:
+            for row in batch_results:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+                saved += 1
+                label_counts[row["label"]] = label_counts.get(row["label"], 0) + 1
+                category = row.get("category") or "unknown"
+                category_counts[category] = category_counts.get(category, 0) + 1
+
+    print(f"\nSaved {saved} examples to {SFT_DATA_PATH}")
+
+    print("\nLabel distribution:")
     for label, count in sorted(label_counts.items()):
         print(f"  Label {label}: {count}")
-    
-    print(f"\nCategory distribution:")
+
+    print("\nCategory distribution:")
     for category, count in sorted(category_counts.items()):
         print(f"  {category}: {count}")
-    
-    print(f"\n✓ SFT data saved to {SFT_DATA_PATH}")
-    print("="*60)
+
+    print("\nDone!")
 
 
 if __name__ == "__main__":
     generate_sft_data_mbbq()
-
