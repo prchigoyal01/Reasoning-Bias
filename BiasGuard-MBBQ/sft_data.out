@@ -1,0 +1,13 @@
+Saved 3742 examples to mbbq_sft_data.jsonl
+
+Label distribution:
+  Label 0: 1491
+  Label 1: 2251
+
+Category distribution:
+  Disability_status: 807
+  Physical_appearance: 707
+  SES: 2116
+  Sexual_orientation: 112
+
+Done!

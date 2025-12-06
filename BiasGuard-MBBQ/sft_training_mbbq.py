@@ -8,7 +8,7 @@ Uses LoRA for efficient fine-tuning, compatible with vLLM inference.
 import torch
 import json
 from trl import SFTTrainer
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 from transformers import (
     AutoModelForCausalLM, 
     AutoTokenizer, 
@@ -21,34 +21,7 @@ from config_mbbq import (
     PROMPT_TEMPLATE_PATH, BIAS_TYPES_PATH, STANDARDS_PATH
 )
 
-def get_mbbq_system_instruction():
-    """Load MBBQ-specific bias types and standards (same as in generate_mbbq_sft_data.py)."""
-    with open(BIAS_TYPES_PATH, 'r') as f:
-        bias_dict = json.load(f)
-        bias_types = ""
-        for bias_name, bias in bias_dict.items():
-            bias_types += "\n" + bias_name + ":\n"
-            for k, v in bias.items():
-                bias_types += f"{k}: {v}\n"
-    
-    with open(STANDARDS_PATH, 'r') as f:
-        standards_dict = json.load(f)
-        standards = ""
-        for _, standard in standards_dict.items():
-            standards += "\n"
-            for k, v in standard.items():
-                standards += f"{k}: {v}\n"
-
-    with open(PROMPT_TEMPLATE_PATH, 'r') as f:
-        prompt_template = json.load(f)
-        prompt = ""
-        for key, value in prompt_template.items():
-            value = value.replace("{standards}", standards)
-            value = value.replace("{bias_types}", bias_types)
-            prompt += f"{key}\n{value}\n\n"
-
-    return prompt
-
+from generate_mbbq_sft_data import get_mbbq_system_instruction, format_prompt
 
 print("="*60)
 print("BiasGuard-MBBQ SFT Training")
@@ -58,14 +31,27 @@ print(f"SFT Data: {SFT_DATA_PATH}")
 print(f"Output Path: {SFT_MODEL_PATH}")
 print("="*60)
 
-# Load system instruction for formatting prompts
-print("\nLoading system instruction...")
-sys_inst = get_mbbq_system_instruction()
 
 # Load SFT data
 print("\nLoading SFT data...")
 dataset = load_dataset("json", data_files=SFT_DATA_PATH, split="train")
 print(f"Total examples: {len(dataset)}")
+
+# Balance languages (en/tr) to equal counts
+print("\nComputing language distribution...")
+en_ds = dataset.filter(lambda ex: ex.get("lang", "en") == "en")
+tr_ds = dataset.filter(lambda ex: ex.get("lang", "en") == "tr")
+print(f"English (en): {len(en_ds)} | Turkish (tr): {len(tr_ds)}")
+
+if len(en_ds) == 0 or len(tr_ds) == 0:
+    print("⚠ Warning: One of the languages has zero samples; skipping balancing.")
+else:
+    min_count = min(len(en_ds), len(tr_ds))
+    print(f"Balancing to {min_count} samples per language...")
+    en_bal = en_ds.shuffle(seed=42).select(range(min_count))
+    tr_bal = tr_ds.shuffle(seed=42).select(range(min_count))
+    dataset = concatenate_datasets([en_bal, tr_bal]).shuffle(seed=42)
+    print(f"Balanced total examples: {len(dataset)}")
 
 # Split into train/test
 train_test_split = dataset.train_test_split(test_size=0.1, seed=42)
@@ -74,46 +60,21 @@ test_data = train_test_split["test"]
 print(f"Train examples: {len(train_data)}")
 print(f"Test examples: {len(test_data)}")
 
-def format_prompt(example, sys_inst):
-    """Format example with system instruction (same as in generate_mbbq_sft_data.py)."""
-    messages = [
-        {"role": "SYSTEM", "content": sys_inst},
-        {"role": "USER", "content": example["prompt"]},
-    ]
-    text = "\n".join([f"[{m['role']}]: {m['content']}" for m in messages])
-    text += "\n[ASSISTANT]: "
-    return text
-
 def preprocess_function(example):
-    """
-    Combine formatted prompt and response into a single text field for SFTTrainer.
-    
-    The data format:
-    - prompt: Raw prompt text (context + question assertion)
-    - response: Reasoning + conclusion
-    
-    We format it with system instruction to match the generation format.
-    """
-    # Format prompt with system instruction
-    formatted_prompt = format_prompt(example, sys_inst)
-    
-    # Get response
-    response_text = example.get("response", "").strip()
-    
-    # Combine formatted prompt and response
-    text = formatted_prompt + response_text
-    
-    return {"text": text}
+    # Combine prompt and response into a single text field for SFTTrainer
+    return {
+        "text": example["prompt"].strip() + "\n\n" + example["response"].strip(),
+    }
 
 # Apply preprocessing
 print("\nPreprocessing data...")
 train_data = train_data.map(
     preprocess_function, 
-    remove_columns=["prompt", "response", "conclusion", "label", "category"]
+    remove_columns=["prompt", "response", "conclusion", "label", "category", "lang"]
 )
 test_data = test_data.map(
     preprocess_function, 
-    remove_columns=["prompt", "response", "conclusion", "label", "category"]
+    remove_columns=["prompt", "response", "conclusion", "label", "category", "lang"]
 )
 
 # Check CUDA availability
