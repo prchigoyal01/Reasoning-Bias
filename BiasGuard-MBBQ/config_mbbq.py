@@ -9,6 +9,7 @@ BATCH_SIZE = 10
 # MBBQ data paths
 MBBQ_DATA_DIR = "../MBBQ_data"
 RESULTS_DIR = "../src/results_new"
+MBBQ_BIASGUARD_PATH = "mbbq_biasguard_format.jsonl"
 
 # Categories to use (without _control suffix)
 CATEGORIES = ['Disability_status', 'Physical_appearance', 'SES', 'Sexual_orientation']

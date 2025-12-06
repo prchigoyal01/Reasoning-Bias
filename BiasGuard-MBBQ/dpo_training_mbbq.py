@@ -71,7 +71,7 @@ print("="*60)
 sft_model = AutoPeftModelForCausalLM.from_pretrained(
     SFT_MODEL_PATH,
     device_map="auto",
-    torch_dtype=torch.float16
+    dtype=torch.float16
 )
 tokenizer = AutoTokenizer.from_pretrained(SFT_MODEL_PATH)
 
@@ -86,6 +86,9 @@ print("Merging LoRA into base model...")
 print("="*60)
 print("This is critical: DPO needs to train on the merged base model, not just the adapter.")
 sft_model = sft_model.merge_and_unload()   # <--- CRITICAL STEP
+# Drop any leftover PEFT metadata so the next adapter starts cleanly
+if hasattr(sft_model, "peft_config"):
+    delattr(sft_model, "peft_config")
 print("✓ LoRA merged into base model")
 print("\n" + "="*60)
 print("Applying NEW LoRA for DPO...")
@@ -111,7 +114,7 @@ print("="*60)
 ref_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL_NAME,  # same base model
     device_map="auto",
-    torch_dtype=torch.float16,
+    dtype=torch.float16,
     trust_remote_code=True,
 )
 
@@ -137,6 +140,10 @@ training_args = DPOConfig(
     fp16=True,
     save_total_limit=3,
     report_to="none",
+    max_length=2048,
+    max_prompt_length=1024,
+    beta=0.1,
+    loss_type=["sigmoid"],
 )
 
 trainer = DPOTrainer(
@@ -144,12 +151,8 @@ trainer = DPOTrainer(
     ref_model=ref_model,
     train_dataset=train_data,
     eval_dataset=test_data,
-    tokenizer=tokenizer,  # Use tokenizer instead of processing_class
+    processing_class=tokenizer,  # Older TRL API expects `processing_class`
     args=training_args,
-    max_length=2048,  # Set max length for tokenization
-    max_prompt_length=1024,  # Max prompt length
-    beta=0.1,  # DPO beta parameter
-    loss_type="sigmoid",  # DPO loss type
 )
 
 print("\n" + "="*60)

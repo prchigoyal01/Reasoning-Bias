@@ -75,7 +75,7 @@ def _is_inappropriate_conclusion(prompt_label, conclusion_text, output_text):
     
     # Only enforce minimum reasoning length/steps (BiasGuard toxigen heuristic)
     step_count = sum(1 for step in required_steps if step in output_text)
-    if step_count < 2:
+    if step_count < 5:
         return True  # Too few reasoning steps
     
     if len(output_text.strip()) < 100:
@@ -96,7 +96,7 @@ def _generate_preference_pairs(model, tokenizer, batch, batch_num=None):
         batch: Batch of prompts
         batch_num: Batch number for logging
     """
-    per_try = 4  # samples to generate per input in a single call
+    per_try = 6  # samples to generate per input in a single call
     results = []
     
     batch_size = len(batch["prompt"])
@@ -104,7 +104,9 @@ def _generate_preference_pairs(model, tokenizer, batch, batch_num=None):
     
     print(f"\n{batch_label}: Processing {batch_size} prompts...")
 
-    for idx, (prompt, prompt_text, label) in enumerate(zip(batch["prompt"], batch["prompt_text"], batch["prompt_label"])):
+    for idx, (prompt, prompt_text, label, category) in enumerate(zip(batch["prompt"], batch["prompt_text"], batch["prompt_label"], batch["category"])):
+        if category not in ["SES", "Sexual_orientation"]:
+            continue
         minibatch = {
             "prompt": [prompt] * per_try,
             "prompt_label": [label] * per_try,
@@ -190,7 +192,7 @@ def generate_rl_data_mbbq():
     print(f"Samples per prompt: 4")
     
     batch_size = BATCH_SIZE
-    out_path = RL_DATA_PATH
+    out_path = "ses_so_" + RL_DATA_PATH + 
     
     # Clear output file if it exists
     with open(out_path, "w") as f:
