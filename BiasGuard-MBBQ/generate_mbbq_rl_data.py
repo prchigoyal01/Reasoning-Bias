@@ -14,77 +14,34 @@ from transformers import AutoTokenizer
 from peft import AutoPeftModelForCausalLM
 from config_mbbq import (
     SFT_MODEL_PATH, RL_DATA_PATH, BATCH_SIZE,
-    SFT_DATA_PATH
+    SFT_DATA_PATH, BASE_MODEL_NAME
 )
-from generate_mbbq_sft_data import get_mbbq_system_instruction, format_prompt
+from generate_mbbq_sft_data import get_mbbq_system_instruction, format_prompt, init_vllm_model, load_biasguard_dataset, _is_wrong_conclusion, batch_generate_responses
 
-BIASED = "Yes, the sentence is biased."
-UNBIASED = "No, the sentence is unbiased."
+STEP_NAME_BY_LANG = {
+    "en": "Step",
+    "tr": "Adım",
+}
 
-
-def batch_generate_responses(model, tokenizer, batch):
-    """Generate responses for a batch of prompts using transformers (fallback)."""
-    results = []
-    inputs = tokenizer(
-        batch["prompt_text"],
-        return_tensors="pt",
-        padding=True,
-        truncation=True,
-        add_special_tokens=False,
-    ).to(model.device)
-
-    input_lens = [len(prompt) for prompt in inputs['input_ids']]
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=512,  # Same as original BiasGuard
-            temperature=0.9,  # Higher temperature for diversity in RL data
-            do_sample=True,
-        )
-    decoded = tokenizer.batch_decode(
-        [out[input_lens[i]:] for i, out in enumerate(outputs)],
-        skip_special_tokens=True
-    )
-
-    for prompt, prompt_label, output in zip(batch['prompt'], batch['prompt_label'], decoded):
-        # Extract the final conclusion in the output
-        conclusion_matches = re.findall(r"## Conclusion ##:\s*(.*)", output)
-        if conclusion_matches:
-            conclusion = conclusion_matches[-1].strip()
-        else:
-            # Fallback: look for conclusion markers
-            if BIASED in output:
-                conclusion = BIASED
-            elif UNBIASED in output:
-                conclusion = UNBIASED
-            else:
-                conclusion = ""
-        
-        results.append({
-            "prompt": prompt,
-            "label": prompt_label,
-            "response": output,
-            "conclusion": conclusion
-        })
-    return results
-
-
-def _is_inappropriate_conclusion(prompt_label, conclusion_text, output_text):
+def _is_inappropriate_conclusion(output_text, lang="en"):
     """Check basic quality: require multi-step reasoning similar to BiasGuard toxigen."""
-    required_steps = ["Step " + str(i) for i in range(1, 5)]
+    required_steps = [STEP_NAME_BY_LANG[lang] + " " + str(i) for i in range(1, 5)]
     
-    # Only enforce minimum reasoning length/steps (BiasGuard toxigen heuristic)
-    step_count = sum(1 for step in required_steps if step in output_text)
-    if step_count < 5:
-        return True  # Too few reasoning steps
+    for step in required_steps:
+        if step not in output_text:
+            # print(f"Missing required step in conclusion: {step}")
+            return True
     
+    # Don't add more than 1 conclusion
+    # Don't do analysis after conclusion
+
     if len(output_text.strip()) < 100:
-        return True  # Output too short to be useful
+        return True  # Model may have skipped reasoning steps, too short
     
     return False
 
 
-def _generate_preference_pairs(model, tokenizer, batch, batch_num=None):
+def _generate_preference_pairs(llm, sampling_params, batch, batch_num=None):
     """Generate preference pairs (chosen/rejected) for a batch of prompts.
     
     We generate `per_try` samples for each input in the batch using a single model call.
@@ -96,7 +53,7 @@ def _generate_preference_pairs(model, tokenizer, batch, batch_num=None):
         batch: Batch of prompts
         batch_num: Batch number for logging
     """
-    per_try = 6  # samples to generate per input in a single call
+    per_try = 8  # samples to generate per input in a single call
     results = []
     
     batch_size = len(batch["prompt"])
@@ -105,39 +62,44 @@ def _generate_preference_pairs(model, tokenizer, batch, batch_num=None):
     print(f"\n{batch_label}: Processing {batch_size} prompts...")
 
     for idx, (prompt, prompt_text, label, category) in enumerate(zip(batch["prompt"], batch["prompt_text"], batch["prompt_label"], batch["category"])):
-        if category not in ["SES", "Sexual_orientation"]:
-            continue
+        lang = batch["lang"][idx]
         minibatch = {
             "prompt": [prompt] * per_try,
             "prompt_label": [label] * per_try,
             "prompt_text": [prompt_text] * per_try,
+            "lang": [lang] * per_try,
+            "category": [category] * per_try,
         }
         
-        outputs = batch_generate_responses(model, tokenizer, minibatch)
+        outputs = batch_generate_responses(llm, sampling_params, minibatch)
         
         chosen = None
-        wrong_responses = []
+        inappropriate_responses = []
         correct_count = 0
+        wrong_count = 0
         
         for out in outputs:
             response = out["response"]
             conclusion = out["conclusion"]
 
+            if _is_wrong_conclusion(label, conclusion, lang):
+                wrong_count += 1
+                continue  # Skip wrong conclusions
 
-            if not _is_inappropriate_conclusion(label, conclusion, response):
+            if not _is_inappropriate_conclusion(conclusion, lang):
                 correct_count += 1
                 if chosen is None:  # Take first correct one as chosen
                     chosen = response
             else:
-                wrong_responses.append(response)
+                inappropriate_responses.append(response)
         
         # Detailed logging per prompt
-        print(f"  Prompt {idx+1}/{batch_size} (label={label}): {correct_count} correct, {len(wrong_responses)} wrong out of {per_try}")
+        print(f"  Prompt {idx+1}/{batch_size} (label={label}): {correct_count} correct, {wrong_count} wrong, {len(inappropriate_responses)} inappropriate out of {len(outputs)} samples.")
 
         # Create preference pairs: one chosen vs each rejected
         if chosen is not None:
-            pairs_for_prompt = len(wrong_responses)
-            for rejected in wrong_responses:
+            pairs_for_prompt = len(inappropriate_responses)
+            for rejected in inappropriate_responses:
                 results.append({
                     "prompt": prompt,
                     "label": label,
@@ -159,44 +121,30 @@ def generate_rl_data_mbbq():
     print("Generating RL Data for BiasGuard-MBBQ")
     print("="*60)
     
-    print(f"\nLoading SFT model from {SFT_MODEL_PATH}...")
+    print(f"\nLoading Base model from {BASE_MODEL_NAME}...")
+    llm, sampling_params = init_vllm_model()
 
-    model = AutoPeftModelForCausalLM.from_pretrained(
-        SFT_MODEL_PATH,
-        device_map='auto',
-        torch_dtype=torch.float16
-    )
-    model.eval()
-    tokenizer = AutoTokenizer.from_pretrained(SFT_MODEL_PATH)
+    dataset = load_biasguard_dataset(mixed=True)
+    print(f"Loaded dataset with {len(dataset)} samples.")
+
+    # model = AutoPeftModelForCausalLM.from_pretrained(
+    #     SFT_MODEL_PATH,
+    #     device_map='auto',
+    #     torch_dtype=torch.float16
+    # )
+    # model.eval()
+    # tokenizer = AutoTokenizer.from_pretrained(SFT_MODEL_PATH)
     
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    # if tokenizer.pad_token is None:
+    #     tokenizer.pad_token = tokenizer.eos_token
 
 
-    sys_inst = get_mbbq_system_instruction()
-    
-    print("\nLoading prompts from SFT data...")
-    dataset = load_dataset("json", data_files=SFT_DATA_PATH, split="train")
-    
-    def prepare_prompt(example):
-        formatted = format_prompt({"prompt": example["prompt"]}, sys_inst)
-        example["prompt_text"] = formatted["prompt_text"]
-        example["prompt_label"] = example["label"]
-        return example
-    
-    dataset = dataset.map(prepare_prompt)
-    
     # Generate preference pairs
     print(f"\nGenerating preference pairs...")
     print(f"Batch size: {BATCH_SIZE}")
-    print(f"Samples per prompt: 4")
     
     batch_size = BATCH_SIZE
-    out_path = "ses_so_" + RL_DATA_PATH + 
-    
-    # Clear output file if it exists
-    with open(out_path, "w") as f:
-        pass  # Create empty file
+    out_path = RL_DATA_PATH
     
     total_pairs = 0
     total_batches = (len(dataset) + batch_size - 1) // batch_size
@@ -207,7 +155,7 @@ def generate_rl_data_mbbq():
     with open(out_path, "a") as f:
         for batch_idx, i in enumerate(tqdm(range(0, len(dataset), batch_size), desc="Processing batches"), 1):
             batch = dataset[i : i + batch_size]
-            pairs = _generate_preference_pairs(model, tokenizer, batch, batch_num=batch_idx)
+            pairs = _generate_preference_pairs(llm, sampling_params, batch, batch_num=batch_idx)
             
             for row in pairs:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")

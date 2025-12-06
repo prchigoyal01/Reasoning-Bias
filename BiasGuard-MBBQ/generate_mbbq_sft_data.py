@@ -10,7 +10,7 @@ import os
 import regex as re
 import torch
 
-from datasets import Dataset
+from datasets import Dataset, concatenate_datasets
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 
@@ -24,14 +24,26 @@ from config_mbbq import (
     MBBQ_BIASGUARD_PATH,
 )
 
-BIASED = "Yes, the sentence is biased."
-UNBIASED = "No, the sentence is unbiased."
+# Language-specific verdict phrases used inside the conclusion text
+BIASED_BY_LANGS = {
+    "en": "Yes, the sentence is biased.",
+    "tr": "Evet, cümle önyargılıdır.",
+}
+UNBIASED_BY_LANGS = {
+    "en": "No, the sentence is unbiased.",
+    "tr": "Hayır, cümle önyargısızdır.",
+}
+
+CONCLUSION_BY_LANGS = {
+    "en": "## Conclusion ##:",
+    "tr": "## Sonuç ##:",
+}
 
 
-def get_mbbq_system_instruction():
+def get_mbbq_system_instruction(lang):
     """Load MBBQ-specific bias types and standards."""
 
-    with open(BIAS_TYPES_PATH, "r", encoding="utf-8") as f:
+    with open(BIAS_TYPES_PATH + f"/{lang}.json", "r", encoding="utf-8") as f:
         bias_dict = json.load(f)
         bias_types = ""
         for bias_name, bias in bias_dict.items():
@@ -39,7 +51,7 @@ def get_mbbq_system_instruction():
             for k, v in bias.items():
                 bias_types += f"{k}: {v}\n"
 
-    with open(STANDARDS_PATH, "r", encoding="utf-8") as f:
+    with open(STANDARDS_PATH + f"/{lang}.json", "r", encoding="utf-8") as f:
         standards_dict = json.load(f)
         standards = ""
         for _, standard in standards_dict.items():
@@ -47,7 +59,7 @@ def get_mbbq_system_instruction():
             for k, v in standard.items():
                 standards += f"{k}: {v}\n"
 
-    with open(PROMPT_TEMPLATE_PATH, "r", encoding="utf-8") as f:
+    with open(PROMPT_TEMPLATE_PATH + f"/{lang}.json", "r", encoding="utf-8") as f:
         prompt_template = json.load(f)
         prompt = ""
         for key, value in prompt_template.items():
@@ -69,33 +81,57 @@ def format_prompt(example, sys_inst):
     return {"prompt_text": text}
 
 
-def load_biasguard_dataset():
-    """Load pre-converted BiasGuard examples and attach prompts."""
-    if not os.path.exists(MBBQ_BIASGUARD_PATH):
+def load_biasguard_dataset_by_lang(lang):
+    file_path = MBBQ_BIASGUARD_PATH + f"/{lang}.jsonl"
+    if not os.path.exists(file_path):
         raise FileNotFoundError(
-            f"Expected BiasGuard-formatted data at {MBBQ_BIASGUARD_PATH}."
+            f"Expected BiasGuard-formatted data at {file_path}."
         )
 
-    print(f"\nLoading BiasGuard-formatted data from {MBBQ_BIASGUARD_PATH} ...")
-    with open(MBBQ_BIASGUARD_PATH, "r", encoding="utf-8") as f:
+    print(f"\nLoading BiasGuard-formatted data from {file_path} ...")
+    with open(file_path, "r", encoding="utf-8") as f:
         records = [json.loads(line) for line in f if line.strip()]
 
-    sys_inst = get_mbbq_system_instruction()
+    sys_inst = get_mbbq_system_instruction(lang=lang)
     dataset = Dataset.from_list(records)
     dataset = dataset.map(lambda ex: {**ex, **format_prompt(ex, sys_inst)})
+    dataset = dataset.map(lambda ex: {**ex, "lang": lang})
     print(f"Loaded {len(dataset)} total prompts.")
     return dataset
 
+def load_biasguard_dataset(mixed: bool = False):
+    """Load pre-converted BiasGuard examples and attach prompts.
+    Default is English-only.
+    """
+    if mixed:
+        en_dataset = load_biasguard_dataset_by_lang(lang="en")
+        tr_dataset = load_biasguard_dataset_by_lang(lang="tr")
+        combined = concatenate_datasets([en_dataset, tr_dataset])
+        return combined.shuffle(seed=42)
+    else:
+        return load_biasguard_dataset_by_lang(lang="en")
 
-def _is_wrong_conclusion(label, conclusion_text):
-    """Quick sanity checks to keep only label-consistent completions."""
+
+def _is_wrong_conclusion(label, conclusion_text, lang: str):
+    """Quick sanity checks to keep only label-consistent completions.
+
+    Check verdict markers specific to the provided language.
+    """
     if not conclusion_text:
         return True
 
     conclusion_text = conclusion_text.strip()
+    biased_marker = BIASED_BY_LANGS[lang]
+    unbiased_marker = UNBIASED_BY_LANGS[lang]
+
+    contains_biased = biased_marker in conclusion_text
+    contains_unbiased = unbiased_marker in conclusion_text
+
     if label == 1:
-        return UNBIASED in conclusion_text or BIASED not in conclusion_text
-    return UNBIASED not in conclusion_text or BIASED in conclusion_text
+        # Label 1 means "biased" according to upstream dataset
+        return contains_unbiased or not contains_biased
+    # Else label 0 means "unbiased"
+    return not contains_unbiased or contains_biased
 
 
 def init_vllm_model():
@@ -109,7 +145,7 @@ def init_vllm_model():
         dtype="float16",
         tensor_parallel_size=1,
         gpu_memory_utilization=0.9,
-        trust_remote_code=True,
+        max_model_len=48000,
     )
     sampling_params = SamplingParams(
         max_tokens=512,
@@ -122,6 +158,7 @@ def init_vllm_model():
 def batch_generate_responses(llm, sampling_params, batch):
     """Sample responses for a batch of prompts via vLLM."""
     prompts = batch["prompt_text"]
+    lang = batch["lang"]
     categories = batch.get("category", [""] * len(prompts))
     outputs = llm.generate(prompts, sampling_params)
 
@@ -129,22 +166,27 @@ def batch_generate_responses(llm, sampling_params, batch):
     for idx, output in enumerate(outputs):
         generations = output.outputs
         if not generations:
+            print(f"Warning: No generations for prompt index {idx}, skipping.")
             continue
 
         text = generations[0].text.strip()
-        match = re.search(r"##\s*Conclusion\s*##\s*:?\s*(.*)", text)
-        conclusion = match.group(1).strip() if match else ""
-
-        results.append(
-            {
-                "prompt": batch["prompt"][idx],
-                "label": int(batch["prompt_label"][idx]),
-                "response": text,
-                "conclusion": conclusion,
-                "category": categories[idx],
-            }
-        )
-
+        conclusion_matches = list(re.findall(rf"{CONCLUSION_BY_LANGS[lang[idx]]}\s*(.*)", text))
+        if conclusion_matches:
+            conclusion = conclusion_matches[-1].strip()
+            results.append(
+                {
+                    "prompt": batch["prompt"][idx],
+                    "label": int(batch["prompt_label"][idx]),
+                    "response": text,
+                    "conclusion": conclusion,
+                    "lang": lang[idx],
+                    "category": categories[idx],
+                }
+            )
+        else:
+            print(f"Warning: No conclusion found in generation for prompt index {idx}, skipping.")
+    
+    print(len(results), "responses generated in batch.")
     return results
 
 
@@ -154,7 +196,7 @@ def generate_sft_data_mbbq():
     print("Generating SFT Data for BiasGuard-MBBQ (vLLM)")
     print("=" * 60)
 
-    dataset = load_biasguard_dataset()
+    dataset = load_biasguard_dataset(mixed=True)
     llm, sampling_params = init_vllm_model()
 
     # Reset output file
@@ -174,7 +216,7 @@ def generate_sft_data_mbbq():
         batch_results = [
             res
             for res in batch_results
-            if not _is_wrong_conclusion(res["label"], res["conclusion"])
+            if not _is_wrong_conclusion(res["label"], res["conclusion"], res["lang"])
             and len(res["response"]) > 50
         ]
 

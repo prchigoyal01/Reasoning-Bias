@@ -1,6 +1,6 @@
-PROMPT_TEMPLATE_PATH = "prompt_templates/tr/original.json"
-BIAS_TYPES_PATH = "prompt_templates/tr/mbbq_bias_types.json"
-STANDARDS_PATH = "prompt_templates/tr/standards.json"
+PROMPT_TEMPLATE_PATH = "prompt_templates/original"
+BIAS_TYPES_PATH = "prompt_templates/mbbq_bias_types"
+STANDARDS_PATH = "prompt_templates/standards"
 
 TEACHER_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
 BASE_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
@@ -9,7 +9,7 @@ BATCH_SIZE = 10
 # MBBQ data paths
 MBBQ_DATA_DIR = "../MBBQ_data"
 RESULTS_DIR = "../src/results_new"
-MBBQ_BIASGUARD_PATH = "mbbq_biasguard_format.jsonl"
+MBBQ_BIASGUARD_PATH = "mbbq_biasguard_format"
 
 # Categories to use (without _control suffix)
 CATEGORIES = ['Disability_status', 'Physical_appearance', 'SES', 'Sexual_orientation']

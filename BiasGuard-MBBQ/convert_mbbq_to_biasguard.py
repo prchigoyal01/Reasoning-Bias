@@ -8,7 +8,7 @@ Each MBBQ example becomes 3 BiasGuard examples:
 
 import json
 import os
-from config_mbbq import MBBQ_DATA_DIR, CATEGORIES
+from config_mbbq import MBBQ_DATA_DIR, CATEGORIES, MBBQ_BIASGUARD_PATH
 
 
 def convert_mbbq_to_biasguard_format(example):
@@ -81,9 +81,9 @@ def convert_mbbq_to_biasguard_format(example):
     return expanded_examples
 
 
-def load_mbbq_category(category, data_dir=MBBQ_DATA_DIR):
+def load_mbbq_category(category, data_dir=MBBQ_DATA_DIR, lang="tr"):
     """Load MBBQ data for a specific category (Turkish only)."""
-    filepath = os.path.join(data_dir, f"{category}_tr.jsonl")
+    filepath = os.path.join(data_dir, f"{category}_{lang}.jsonl")
     
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"MBBQ data file not found: {filepath}")
@@ -97,7 +97,7 @@ def load_mbbq_category(category, data_dir=MBBQ_DATA_DIR):
     return examples
 
 
-def convert_all_categories(categories=None, data_dir=MBBQ_DATA_DIR):
+def convert_all_categories(categories=None, data_dir=MBBQ_DATA_DIR, lang="tr"):
     """
     Convert all MBBQ categories to BiasGuard format.
     
@@ -112,7 +112,7 @@ def convert_all_categories(categories=None, data_dir=MBBQ_DATA_DIR):
     
     for category in categories:
         print(f"Processing {category}...")
-        mbbq_examples = load_mbbq_category(category, data_dir)
+        mbbq_examples = load_mbbq_category(category, data_dir, lang)
         
         category_count = 0
         for example in mbbq_examples:
@@ -131,17 +131,23 @@ def convert_all_categories(categories=None, data_dir=MBBQ_DATA_DIR):
 if __name__ == "__main__":
     # Test conversion
     print("Converting MBBQ to BiasGuard format...")
-    examples = convert_all_categories()
-    
-    # Show sample
-    print("\nSample converted example:")
-    print(json.dumps(examples[0], indent=2))
-    
-    # Save to file for inspection
-    output_file = "mbbq_biasguard_format.jsonl"
-    with open(output_file, 'w', encoding='utf-8') as f:
-        for ex in examples:
-            f.write(json.dumps(ex) + '\n')
-    
-    print(f"\nSaved {len(examples)} examples to {output_file}")
+
+    LANGS = ["tr", "en"]
+
+    for lang in LANGS:
+        print(f"\nLanguage: {lang}")
+
+        examples = convert_all_categories(lang=lang)
+        
+        # Show sample
+        print("\nSample converted example:")
+        print(json.dumps(examples[0], indent=2))
+        
+        # Save to file for inspection
+        output_file = MBBQ_BIASGUARD_PATH + f"/{lang}.jsonl"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for ex in examples:
+                f.write(json.dumps(ex) + '\n')
+        
+        print(f"\nSaved {len(examples)} examples to {output_file}")
 
