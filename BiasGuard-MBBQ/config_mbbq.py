@@ -1,6 +1,6 @@
-PROMPT_TEMPLATE_PATH = "prompt_templates/original.json"
-BIAS_TYPES_PATH = "prompt_templates/mbbq_bias_types.json"
-STANDARDS_PATH = "prompt_templates/standards.json"
+PROMPT_TEMPLATE_PATH = "prompt_templates/tr/original.json"
+BIAS_TYPES_PATH = "prompt_templates/tr/mbbq_bias_types.json"
+STANDARDS_PATH = "prompt_templates/tr/standards.json"
 
 TEACHER_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
 BASE_MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"

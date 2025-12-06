@@ -82,8 +82,8 @@ def convert_mbbq_to_biasguard_format(example):
 
 
 def load_mbbq_category(category, data_dir=MBBQ_DATA_DIR):
-    """Load MBBQ data for a specific category (English only)."""
-    filepath = os.path.join(data_dir, f"{category}_en.jsonl")
+    """Load MBBQ data for a specific category (Turkish only)."""
+    filepath = os.path.join(data_dir, f"{category}_tr.jsonl")
     
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"MBBQ data file not found: {filepath}")
