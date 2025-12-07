@@ -60,6 +60,10 @@ test_data = train_test_split["test"]
 print(f"Train examples: {len(train_data)}")
 print(f"Test examples: {len(test_data)}")
 
+with open("test_samples_mbbq.jsonl", "w", encoding="utf-8") as f:
+    for example in test_data:
+        f.write(json.dumps(example, ensure_ascii=False) + "\n")
+
 def preprocess_function(example):
     # Combine prompt and response into a single text field for SFTTrainer
     return {
