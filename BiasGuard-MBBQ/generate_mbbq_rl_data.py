@@ -10,32 +10,40 @@ import torch
 import re
 from tqdm import tqdm
 from datasets import load_dataset
+from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
 from peft import AutoPeftModelForCausalLM
 from config_mbbq import (
     SFT_MODEL_PATH, RL_DATA_PATH, BATCH_SIZE,
     SFT_DATA_PATH, BASE_MODEL_NAME
 )
-from generate_mbbq_sft_data import get_mbbq_system_instruction, format_prompt, init_vllm_model, load_biasguard_dataset, _is_wrong_conclusion, batch_generate_responses
+from generate_mbbq_sft_data import load_biasguard_dataset, _is_wrong_conclusion, batch_generate_responses, init_vllm_model, CONCLUSION_BY_LANGS
 
 STEP_NAME_BY_LANG = {
     "en": "Step",
     "tr": "Adım",
 }
 
-def _is_inappropriate_conclusion(output_text, lang="en"):
+def _is_inappropriate_conclusion(response, lang):
     """Check basic quality: require multi-step reasoning similar to BiasGuard toxigen."""
     required_steps = [STEP_NAME_BY_LANG[lang] + " " + str(i) for i in range(1, 5)]
     
     for step in required_steps:
-        if step not in output_text:
+        if step not in response:
             # print(f"Missing required step in conclusion: {step}")
             return True
     
     # Don't add more than 1 conclusion
-    # Don't do analysis after conclusion
+    conclusion_matches = list(re.findall(rf"{CONCLUSION_BY_LANGS[lang]}\s*(.*)", response))
+    if len(conclusion_matches) > 1:
+        return True
 
-    if len(output_text.strip()) < 100:
+    # Optional: Don't do analysis after conclusion
+    # analysis_after_conclusion = re.search(rf"{CONCLUSION_BY_LANGS[lang]}\s*.*\n(.*)", response, re.DOTALL)
+    # if analysis_after_conclusion:
+    #     return True
+
+    if len(response.strip()) < 100:
         return True  # Model may have skipped reasoning steps, too short
     
     return False
@@ -53,7 +61,7 @@ def _generate_preference_pairs(llm, sampling_params, batch, batch_num=None):
         batch: Batch of prompts
         batch_num: Batch number for logging
     """
-    per_try = 8  # samples to generate per input in a single call
+    per_try = 20  # samples to generate per input in a single call
     results = []
     
     batch_size = len(batch["prompt"])
@@ -71,7 +79,7 @@ def _generate_preference_pairs(llm, sampling_params, batch, batch_num=None):
             "category": [category] * per_try,
         }
         
-        outputs = batch_generate_responses(llm, sampling_params, minibatch)
+        outputs = batch_generate_responses(llm, sampling_params, minibatch, adapter_path=SFT_MODEL_PATH)
         
         chosen = None
         inappropriate_responses = []
@@ -86,7 +94,7 @@ def _generate_preference_pairs(llm, sampling_params, batch, batch_num=None):
                 wrong_count += 1
                 continue  # Skip wrong conclusions
 
-            if not _is_inappropriate_conclusion(conclusion, lang):
+            if not _is_inappropriate_conclusion(response, lang):
                 correct_count += 1
                 if chosen is None:  # Take first correct one as chosen
                     chosen = response
@@ -122,22 +130,11 @@ def generate_rl_data_mbbq():
     print("="*60)
     
     print(f"\nLoading Base model from {BASE_MODEL_NAME}...")
-    llm, sampling_params = init_vllm_model()
+    
+    llm, sampling_params = init_vllm_model(enable_lora=True)
 
     dataset = load_biasguard_dataset(mixed=True)
     print(f"Loaded dataset with {len(dataset)} samples.")
-
-    # model = AutoPeftModelForCausalLM.from_pretrained(
-    #     SFT_MODEL_PATH,
-    #     device_map='auto',
-    #     torch_dtype=torch.float16
-    # )
-    # model.eval()
-    # tokenizer = AutoTokenizer.from_pretrained(SFT_MODEL_PATH)
-    
-    # if tokenizer.pad_token is None:
-    #     tokenizer.pad_token = tokenizer.eos_token
-
 
     # Generate preference pairs
     print(f"\nGenerating preference pairs...")
@@ -153,7 +150,7 @@ def generate_rl_data_mbbq():
     print("="*60)
     
     with open(out_path, "a") as f:
-        for batch_idx, i in enumerate(tqdm(range(0, len(dataset), batch_size), desc="Processing batches"), 1):
+        for batch_idx, i in enumerate(range(0, len(dataset), batch_size), 1):
             batch = dataset[i : i + batch_size]
             pairs = _generate_preference_pairs(llm, sampling_params, batch, batch_num=batch_idx)
             

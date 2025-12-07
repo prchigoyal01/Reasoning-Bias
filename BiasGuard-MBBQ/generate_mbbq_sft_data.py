@@ -7,12 +7,14 @@ reasoning traces from the teacher model.
 
 import json
 import os
+from typing import Optional
 import regex as re
 import torch
 
 from datasets import Dataset, concatenate_datasets
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
+from vllm.lora.request import LoRARequest
 
 from config_mbbq import (
     SFT_DATA_PATH,
@@ -134,7 +136,7 @@ def _is_wrong_conclusion(label, conclusion_text, lang: str):
     return not contains_unbiased or contains_biased
 
 
-def init_vllm_model():
+def init_vllm_model(enable_lora: bool = False):
     """Create a vLLM generator that mirrors the BiasGuard teacher sampling."""
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA not available! vLLM generation requires a GPU.")
@@ -142,6 +144,7 @@ def init_vllm_model():
     print("\nInitializing teacher model with vLLM...")
     llm = LLM(
         model=TEACHER_MODEL_NAME,
+        enable_lora=enable_lora,
         dtype="float16",
         tensor_parallel_size=1,
         gpu_memory_utilization=0.9,
@@ -155,12 +158,19 @@ def init_vllm_model():
     return llm, sampling_params
 
 
-def batch_generate_responses(llm, sampling_params, batch):
+def batch_generate_responses(llm, sampling_params, batch, adapter_path: Optional[str] = None):
     """Sample responses for a batch of prompts via vLLM."""
     prompts = batch["prompt_text"]
     lang = batch["lang"]
     categories = batch.get("category", [""] * len(prompts))
-    outputs = llm.generate(prompts, sampling_params)
+    if adapter_path is not None:
+        outputs = llm.generate(
+            prompts,
+            sampling_params,
+            lora_request=LoRARequest("sql_adapter", 1, adapter_path),
+        )
+    else:
+        outputs = llm.generate(prompts, sampling_params)
 
     results = []
     for idx, output in enumerate(outputs):
