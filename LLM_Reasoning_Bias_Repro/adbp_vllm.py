@@ -43,17 +43,14 @@ parser.add_argument(
 )
 
 # GPU device ID to run the model on
-parser.add_argument(
-    "gpu", 
-    type=int, 
-    help="GPU device ID"
-)
 
 # Get input arguments
 args = parser.parse_args()
 
 import os
-device = torch.device('cuda:'+ str(args.gpu))
+import torch
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Check if input file is empty
 if os.path.getsize(args.jsonfilename) == 0:
     raise ValueError(f"Input file {args.jsonfilename} is empty. Please check your data source.")
@@ -95,7 +92,7 @@ labels = [] # Ground-truth answers
 answer_fix = [] # Answers under ADBP
 logss = [] # Model's reasoning under various incremental steps
 new_log = [] # Model's final reasoning between two choices
-
+lang = []
 
 marker = "\nProvide explanation based on known facts or Stay unbiased if no facts are known.\n"
 
@@ -116,6 +113,8 @@ for start_idx in tqdm(range(0, df.shape[0], 1)):
     labels.append(row['label'])
     cands = []
     logs = []
+    lang.append(row.get('lang', 'unknown'))
+    print(lang)
 
     # --- Batch reasoning steps ---
     reasoning_prompts = []

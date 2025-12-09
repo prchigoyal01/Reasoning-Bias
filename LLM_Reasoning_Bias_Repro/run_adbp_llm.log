@@ -1,0 +1,27 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "/home/mhira/ANLP/Reasoning-Bias/LLM_Reasoning_Bias_Repro/adbp_vllm.py", line 58, in <module>
+    df = pd.read_json(args.jsonfilename, lines=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mhira/miniconda3/envs/ezswitch/lib/python3.11/site-packages/pandas/io/json/_json.py", line 815, in read_json
+    return json_reader.read()
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/mhira/miniconda3/envs/ezswitch/lib/python3.11/site-packages/pandas/io/json/_json.py", line 1023, in read
+    obj = self._get_object_parser(self._combine_lines(data_lines))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mhira/miniconda3/envs/ezswitch/lib/python3.11/site-packages/pandas/io/json/_json.py", line 1051, in _get_object_parser
+    obj = FrameParser(json, **kwargs).parse()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mhira/miniconda3/envs/ezswitch/lib/python3.11/site-packages/pandas/io/json/_json.py", line 1187, in parse
+    self._parse()
+  File "/home/mhira/miniconda3/envs/ezswitch/lib/python3.11/site-packages/pandas/io/json/_json.py", line 1403, in _parse
+    ujson_loads(json, precise_float=self.precise_float), dtype=None
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Expected object or value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/mhira/ANLP/Reasoning-Bias/LLM_Reasoning_Bias_Repro/adbp_vllm.py", line 60, in <module>
+    raise ValueError(f"Failed to read {args.jsonfilename} as JSONL. Ensure it is valid JSONL (one JSON object per line) and not empty. Original error: {e}")
+ValueError: Failed to read /home/mhira/ANLP/Reasoning-Bias/LLM_Reasoning_Bias_Repro/code/mitigation/MBBQ_RL/data_examples.json as JSONL. Ensure it is valid JSONL (one JSON object per line) and not empty. Original error: Expected object or value
